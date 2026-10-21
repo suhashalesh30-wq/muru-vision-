@@ -668,7 +668,9 @@ async function geminiCall(model, body, timeoutMs=30000){
   if (!r.ok) { const err = new Error(j.error?.message || ("Gemini error "+r.status)); err.status = r.status; throw err; }
   return j;
 }
-let goodModel = null;   // first model that answered this session, so later calls skip ones that 404
+let goodModel = null;   // the model that answered last, tried first next time
+let cfgMemo = {};       // model -> settings it accepted
+try { const c = JSON.parse(localStorage.getItem("muru_cfg")||"null"); if (c && Date.now()-c.ts < 24*3600e3) { goodModel = c.good; cfgMemo = c.memo||{}; } } catch(e){}
 let thinkCfgRejected = false;   // set if a model refuses thinkingConfig
 
 async function geminiText({system, parts, search=false, json=true, timeoutMs=45000}){
@@ -683,17 +685,27 @@ async function geminiText({system, parts, search=false, json=true, timeoutMs=450
     if (system) body.systemInstruction = {parts:[{text:system}]};
     return body;
   };
+  /* Thinking makes answers slower. Each model family uses a different "think less" setting,
+     so Muru tries them in order and remembers which one the model accepted. */
+  const thinkOpts = m => /2\.5-flash/.test(m) ? [{thinkingBudget:0}, null]
+    : /gemini-3|flash-latest|flash-lite-latest/.test(m) ? [{thinkingLevel:"minimal"}, {thinkingLevel:"low"}, null]
+    : [null];
   const variants = m => {
-    const v = [];
-    const full = base();
-    // "skip thinking" (faster) is only sent to 2.5 Flash models, which are known to accept it
-    if (/2\.5-flash/.test(m) && !thinkCfgRejected) full.generationConfig.thinkingConfig = {thinkingBudget:0};
-    if (search) full.tools = [{google_search:{}}]; else if (json) full.generationConfig.responseMimeType = "application/json";
-    v.push(full);
-    const simple = base();   // no thinking setting, no search tool, JSON asked for in the prompt only
+    const v = thinkOpts(m).map(tc => {
+      const b = base();
+      if (tc) b.generationConfig.thinkingConfig = tc;
+      if (search) b.tools = [{google_search:{}}]; else if (json) b.generationConfig.responseMimeType = "application/json";
+      b._key = JSON.stringify(tc);
+      return b;
+    });
+    const simple = base();   // last resort: no thinking setting, no search tool, JSON asked for in the prompt only
     if (json) simple.contents[0].parts.push({text:"Reply with only the JSON object, no other text."});
+    simple._key = "simple";
     v.push(simple);
-    return v;
+    // start from the settings this model accepted last time
+    const ok = cfgMemo[m];
+    const i = v.findIndex(x => x._key === ok);
+    return i > 0 ? [...v.slice(i), ...v.slice(0,i)] : v;
   };
   const textOf = j => (j.candidates?.[0]?.content?.parts || []).filter(p=>!p.thought).map(p=>p.text||"").join("").trim();
   let last;
@@ -701,12 +713,14 @@ async function geminiText({system, parts, search=false, json=true, timeoutMs=450
     let moveOn = false;
     for (const body of variants(m)) {
       try {
-        let j;
+        let j; const key = body._key; delete body._key;
         try { j = await geminiCall(m, body, timeoutMs); }
         catch(e) { if (!isBusy(e)) throw e; await sleep(1200); j = await geminiCall(m, body, timeoutMs); }   // busy: one quick retry
         const text = textOf(j);
         if (!text) throw new Error(j.promptFeedback?.blockReason ? "Gemini blocked this request ("+j.promptFeedback.blockReason+")." : "Gemini returned an empty answer. Try again.");
         goodModel = m; aiProblem = null;
+        if (key !== "simple") cfgMemo[m] = key;
+        try { localStorage.setItem("muru_cfg", JSON.stringify({good:m, memo:cfgMemo, ts:Date.now()})); } catch(x){}
         return text;
       } catch(e) {
         last = e; e.model = m;
@@ -885,7 +899,9 @@ function assistSystem(){
   const now = new Date();
   const notes = S.notes.slice(0,15).map(n => `- ${n.text.slice(0,160)}`).join("\n") || "none";
   const rems = S.reminders.filter(r=>!r.done).slice(0,10).map(r => `- ${r.text} at ${new Date(r.when).toLocaleString()}`).join("\n") || "none";
-  return `You are Muru, the voice assistant inside Muru Vision, a screenless AI companion. Be warm, brief and practical: 1 to 3 short sentences, because answers are read aloud. Reply in the language the user used (Kannada, Hindi, Telugu or English).
+  return `You are Muru, the voice assistant inside Muru Vision, a screenless AI companion. Be warm, direct and practical. Answers are read aloud, so keep them short: 1 to 3 sentences, or for lists (places to visit, options, steps) up to 5 short items with one line each. Reply in the language the user used (Kannada, Hindi, Telugu or English).
+The user is in India. Give prices in Indian rupees (₹).
+When Google Search results are available, USE them: give the actual answer (the price, the places, the facts) with specific numbers and names. Don't tell the user to "check the website" when the search gave you the answer. If figures differ by store or variant, give the starting price and say it can vary. Only say you don't know if the search truly found nothing.
 User name: ${S.settings.name || "unknown"}. Current local time: ${now.toString()}.
 Their notes:\n${notes}
 Their upcoming reminders:\n${rems}
@@ -895,8 +911,7 @@ Possible actions (use only when clearly asked):
 {"type":"add_reminder","text":string,"when":"ISO 8601 local datetime like 2026-10-21T20:00"}
 {"type":"open","screen":"translate"|"see"|"memory"|"sos"}
 {"type":"sos"}  (only if the user says they are in danger or asks for SOS)
-{"type":"maps","query":string}  (for places, directions, nearest hospital etc.)
-If a request needs live data you don't have, say so briefly.`;
+{"type":"maps","query":string}  (ONLY when the user wants directions, the nearest/nearby place, or asks to open a map. For "places to visit", "best restaurants" and similar, answer in "reply" with real names; you may add a maps action as an extra, never instead of the answer.)`;
 }
 function renderChat(){
   const c = $("#chat"); c.innerHTML = "";
@@ -936,6 +951,14 @@ async function runActions(actions){
   }
   save(); return done;
 }
+/* Google Search makes answers about prices, places, news and facts accurate, but adds a second or two,
+   so it's skipped for simple commands like notes, reminders and opening screens. */
+function needsSearch(text, audio){
+  if (audio) return true;
+  const t = (text||"").toLowerCase();
+  if (/^(note|save|remind|set (a )?reminder|open|sos|help me|call|what can you do|hi|hello|hey|thanks|thank you)\b/.test(t)) return false;
+  return true;
+}
 let assistBusy = false;
 async function assistSend({text, audio}){
   if (assistBusy) return; assistBusy = true;
@@ -945,7 +968,7 @@ async function assistSend({text, audio}){
     const hist = S.chat.slice(-9,-1).map(m => (m.role==="user"?"User: ":"Muru: ")+m.text).join("\n");
     const parts = [{text: (hist? "Recent conversation:\n"+hist+"\n\n" : "") + (audio ? "The user just said this (audio attached). Understand it and respond." : "User: "+text)}];
     if (audio) parts.push(audio);
-    const r = await ask({system: assistSystem(), parts, json:true, tier:"quick"});
+    const r = await ask({system: assistSystem(), parts, json:true, tier:"quick", search: needsSearch(text, audio)});
     const reply = String(r.reply || r.text || "Sorry, I didn't get that.");
     const acts = await runActions(r.actions);
     const maps = acts.find(a=>a.startsWith("MAPS:"));
