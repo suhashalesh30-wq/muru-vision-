@@ -376,10 +376,14 @@ details summary{cursor:pointer;font-weight:700}
 
     <div id="p-notes" class="view" style="padding:0">
       <div class="card">
+        <input type="text" id="noteTitle" placeholder="Heading (helps you find it later)" maxlength="80">
         <div class="row nowrap"><textarea id="noteIn" placeholder="Write a note, or tap the mic to speak it"></textarea></div>
         <div class="row"><button class="btn primary grow" id="noteAdd">Save note</button><button class="btn" id="noteMic" aria-label="Speak a note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span id="noteMicL">Speak</span></button></div>
+        <button class="btn" id="noteAI">✨ Organise with AI</button>
+        <p class="small muted" style="margin:0">Write about your day or plans in any words. Muru turns it into a clear timetable, and any date or time you mention can become a reminder.</p>
       </div>
-      <input type="text" id="noteSearch" placeholder="Search notes">
+      <div class="card" id="aiPlan" hidden></div>
+      <input type="text" id="noteSearch" placeholder="Search by heading or text">
       <div class="card"><div class="list" id="noteList"></div></div>
     </div>
 
@@ -387,19 +391,20 @@ details summary{cursor:pointer;font-weight:700}
       <div class="card">
         <label class="f">What<input type="text" id="remText" placeholder="Take medicine"></label>
         <label class="f">When<input type="datetime-local" id="remWhen"></label>
+        <label class="f">How many times should it ring?<select id="remRings"><option value="1">1 time</option><option value="2">2 times</option><option value="3">3 times</option><option value="5">5 times</option><option value="10">10 times</option></select></label>
         <button class="btn primary" id="remAdd">Add reminder</button>
-        <p class="small muted" style="margin:0" id="remNote">Reminders ring while Muru is open on your phone.</p>
+        <p class="small muted" style="margin:0" id="remNote">Reminders ring while Muru is open on your phone. Tap the reminder message to stop the ringing.</p>
       </div>
       <div class="card"><div class="list" id="remList"></div></div>
     </div>
 
     <div id="p-photos" class="view" style="padding:0" hidden>
-      <div class="card"><div class="grid" id="photoGrid"></div><div class="empty" id="photoEmpty">Photos you save from See show up here. They stay on this phone.</div></div>
+      <div class="card"><div class="grid" id="photoGrid"></div><div class="empty" id="photoEmpty">Photos you take on the See screen show up here automatically. They stay on this phone.</div></div>
     </div>
 
     <div id="p-meet" class="view" style="padding:0" hidden>
       <div class="card">
-        <div class="row nowrap"><div class="grow"><h3 style="font-size:17px">Meeting recorder</h3><p class="small muted" style="margin:2px 0 0">Records audio, then writes a summary and action items. Up to 12 minutes. Ask everyone before you record.</p></div></div>
+        <div class="row nowrap"><div class="grow"><h3 style="font-size:17px">Meeting recorder</h3><p class="small muted" style="margin:2px 0 0">Records audio, then writes a summary, key points, action items and the full text. Up to 12 minutes. Ask everyone before you record.</p></div></div>
         <div class="orbwrap" style="padding:0"><button class="orb small" id="meetOrb" aria-label="Start meeting recording"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button><div class="orbhint" id="meetHint">Tap to start recording</div></div>
         <label class="btn sm ghost" for="meetFile" style="align-self:center">Or summarize an audio file</label><input type="file" id="meetFile" accept="audio/*" hidden>
       </div>
@@ -536,7 +541,7 @@ async function idb(mode, fn){
   });
 }
 async function photoPut(p){ mem.set(p.id, p); await idb("readwrite", s => s.put(p)); }
-async function photoAll(){ const a = await idb("readonly", s => s.getAll()); return (a || [...mem.values()]).sort((x,y)=>y.ts-x.ts); }
+async function photoAll(){ const a = await idb("readonly", s => s.getAll()); return (a || [...mem.values()]).filter(x => x.kind !== "audio").sort((x,y)=>y.ts-x.ts); }
 async function photoGet(id){ return (await idb("readonly", s => s.get(id))) || mem.get(id); }
 async function photoDel(id){ mem.delete(id); await idb("readwrite", s => s.delete(id)); }
 
@@ -666,7 +671,7 @@ async function geminiCall(model, body, timeoutMs=30000){
 let goodModel = null;   // first model that answered this session, so later calls skip ones that 404
 let thinkCfgRejected = false;   // set if a model refuses thinkingConfig
 
-async function geminiText({system, parts, search=false, json=true}){
+async function geminiText({system, parts, search=false, json=true, timeoutMs=45000}){
   const body = {
     contents:[{role:"user", parts: parts.map(p => p.text!==undefined ? {text:p.text} : {inline_data:{mime_type:p.mime, data:p.b64}})}],
     generationConfig:{temperature:0.4}
@@ -678,7 +683,7 @@ async function geminiText({system, parts, search=false, json=true}){
   let last;
   for (const m of modelChain(S.settings.model)) {
     try {
-      const j = await geminiCall(m, body);
+      const j = await geminiCall(m, body, timeoutMs);
       goodModel = m; aiProblem = null;
       const text = (j.candidates?.[0]?.content?.parts || []).map(p=>p.text||"").join("").trim();
       if (!text) throw new Error(j.promptFeedback?.blockReason ? "Gemini blocked this request ("+j.promptFeedback.blockReason+")." : "Gemini returned an empty answer. Try again.");
@@ -686,13 +691,13 @@ async function geminiText({system, parts, search=false, json=true}){
     } catch(e) {
       last = e;
       if (e.network) throw e;
-      if (e.status === 400 && /thinking/i.test(e.message) && !thinkCfgRejected) { thinkCfgRejected = true; return geminiText({system, parts, search, json}); }
-      if (search && e.status === 400) { return geminiText({system, parts, search:false, json}); }
+      if (e.status === 400 && /thinking/i.test(e.message) && !thinkCfgRejected) { thinkCfgRejected = true; return geminiText({system, parts, search, json, timeoutMs}); }
+      if (search && e.status === 400) { return geminiText({system, parts, search:false, json, timeoutMs}); }
       if (e.status === 404 || /not found|not supported/i.test(e.message)) continue;
       if (isBusy(e)) {   // busy: wait a moment, try the same model once more, then the next model
         await sleep(1200);
         try {
-          const j = await geminiCall(m, body); goodModel = m;
+          const j = await geminiCall(m, body, timeoutMs); goodModel = m;
           const text = (j.candidates?.[0]?.content?.parts || []).map(p=>p.text||"").join("").trim();
           if (text) { aiProblem = null; return text; }
         } catch(e2){ last = e2; if (isQuota(e2)) markExhausted(m, e2.message); }
@@ -714,10 +719,10 @@ async function ask(opts){
   try { return await askInner(opts); }
   finally { lastMs = performance.now() - t0; refreshAIState(); }
 }
-async function askInner({system="", parts, json=true, search=false, tier="default"}){
+async function askInner({system="", parts, json=true, search=false, tier="default", timeoutMs}){
   if (S.settings.key && !geminiBlocked) {
     try {
-      const t = await geminiText({system, parts, search, json});
+      const t = await geminiText({system, parts, search, json, timeoutMs});
       return json ? (parseJSON(t) ?? {reply:t}) : t;
     } catch(e) {
       if (!e.network) throw e;
@@ -867,7 +872,7 @@ Their notes:\n${notes}
 Their upcoming reminders:\n${rems}
 Reply ONLY with JSON: {"reply": string, "lang": "kn"|"hi"|"te"|"en", "actions": [ ... ]}
 Possible actions (use only when clearly asked):
-{"type":"add_note","text":string}
+{"type":"add_note","title":"short heading","text":string}
 {"type":"add_reminder","text":string,"when":"ISO 8601 local datetime like 2026-10-21T20:00"}
 {"type":"open","screen":"translate"|"see"|"memory"|"sos"}
 {"type":"sos"}  (only if the user says they are in danger or asks for SOS)
@@ -898,9 +903,9 @@ function getLoc(timeout=8000){
 async function runActions(actions){
   const done = [];
   for (const a of (Array.isArray(actions)?actions:[])) {
-    if (a.type==="add_note" && a.text) { S.notes.unshift({id:uid(), text:String(a.text), ts:Date.now()}); done.push("Note saved"); }
+    if (a.type==="add_note" && a.text) { S.notes.unshift({id:uid(), title:String(a.title||""), text:String(a.text), ts:Date.now()}); done.push("Note saved"); }
     else if (a.type==="add_reminder" && a.text) {
-      const when = Date.parse(a.when); if (!isNaN(when)) { S.reminders.push({id:uid(), text:String(a.text), when, done:false}); S.reminders.sort((x,y)=>x.when-y.when); done.push("Reminder set for "+fmtTime(when)); askNotify(); }
+      const when = Date.parse(a.when); if (!isNaN(when)) { S.reminders.push({id:uid(), text:String(a.text), when, done:false, rings:+S.settings.remRings||1}); S.reminders.sort((x,y)=>x.when-y.when); done.push("Reminder set for "+fmtTime(when)); askNotify(); }
     }
     else if (a.type==="open" && ["translate","see","memory","sos"].includes(a.screen)) { setTimeout(()=>go(a.screen), 900); done.push("Opening "+a.screen); }
     else if (a.type==="sos") { go("sos"); startSOS(); done.push("Emergency mode on"); }
@@ -979,7 +984,7 @@ function trPrompt(mode){
   const my=L(S.settings.myLang), th=L(S.settings.theirLang);
   const rule = mode==="me" ? `The speaker speaks ${my.n}. Translate into ${th.n}.`
     : mode==="them" ? `The speaker speaks ${th.n}. Translate into ${my.n}.`
-    : `Detect the spoken language. If it is ${my.n}, translate into ${th.n}. Otherwise translate into ${my.n}.`;
+    : `Detect the language. If it is ${th.n}, translate into ${my.n}. If it is any other language (${my.n}, English, or anything else), translate into ${th.n}.`;
   return `You are a live interpreter for Indian travellers. ${rule}
 Keep the meaning, tone and politeness natural for a real conversation (shops, temples, bus stands, prices, bargaining). Numbers and prices must be exact.
 Write the translation in the target language's own script. Also give a romanized (Latin letters) pronunciation of the translation so the user can say it.
@@ -1039,17 +1044,18 @@ function showBig(text, lang){ $("#bigText").textContent=text; $("#bigLang").text
 $("#bigClose").onclick = () => $("#big").hidden = true;
 
 /* ================= SEE ================= */
-let seeBlob = null, seeMode = "describe", seeAnswer = "";
-async function pickImage(file){
+let seeBlob = null, seeMode = "describe", seeAnswer = "", seePhotoId = null;
+async function pickImage(file, fromCamera){
   if (!file) return;
   try {
-    seeBlob = await shrink(file, 1280);
+    seeBlob = await shrink(file, 1280); seePhotoId = null;
+    if (fromCamera) { seePhotoId = uid(); await photoPut({id:seePhotoId, ts:Date.now(), blob:seeBlob, label:""}); }
     const url = URL.createObjectURL(seeBlob);
     $("#seePrev").innerHTML = `<img alt="Your photo" src="${url}">`;
     runSee();
   } catch(e){ toast("Couldn't open that photo."); }
 }
-$("#camIn").onchange = e => { pickImage(e.target.files[0]); e.target.value=""; };
+$("#camIn").onchange = e => { pickImage(e.target.files[0], true); e.target.value=""; };
 $("#galIn").onchange = e => { pickImage(e.target.files[0]); e.target.value=""; };
 document.querySelectorAll("#seeModes .chip").forEach(c => c.onclick = () => {
   seeMode = c.dataset.m; document.querySelectorAll("#seeModes .chip").forEach(x=>x.setAttribute("aria-pressed", String(x===c)));
@@ -1073,12 +1079,13 @@ async function runSee(q){
     const lang = L(S.settings.myLang).n;
     const r = await ask({system:`You are Muru's camera assistant. Answer in simple ${q?"language matching the question":"English"}. Never invent details you can't see. If the user's language is ${lang}, keep any translation in ${lang} script.`, parts:[{text:instr}, {mime:"image/jpeg", b64, blob:seeBlob}], json:false});
     seeAnswer = String(r).trim(); $("#seeAns").textContent = seeAnswer;
+    if (seePhotoId) { const ph = await photoGet(seePhotoId); if (ph) await photoPut({...ph, label: seeAnswer.slice(0,300)}); }
     speak(seeAnswer, "en");
   } catch(e){ $("#seeAns").textContent = e.message; }
   finally { seeBusy=false; $("#seeAsk").disabled=false; }
 }
 $("#seeSpeak").onclick = () => speak(seeAnswer, "en");
-$("#seeSave").onclick = async () => { if(!seeBlob) return; await photoPut({id:uid(), ts:Date.now(), blob:seeBlob, label: seeAnswer.slice(0,120)}); toast("Saved to Memory › Photos"); };
+$("#seeSave").onclick = async () => { if(!seeBlob) return; if (seePhotoId) { toast("Already saved in Memory › Photos"); return; } seePhotoId = uid(); await photoPut({id:seePhotoId, ts:Date.now(), blob:seeBlob, label: seeAnswer.slice(0,300)}); toast("Saved to Memory › Photos"); };
 
 /* live look */
 let live = {on:false, stream:null, iv:null, frames:[]};
@@ -1132,14 +1139,66 @@ function renderMemory(){
 /* notes */
 function renderNotes(){
   const q = $("#noteSearch").value.trim().toLowerCase();
-  const list = S.notes.filter(n => !q || n.text.toLowerCase().includes(q));
-  $("#noteList").innerHTML = list.length ? list.map(n => `<div class="li"><div class="body"><div>${esc(n.text)}</div><div class="meta">${fmtTime(n.ts)}</div></div><button class="btn sm" data-r="${n.id}" aria-label="Read aloud">▶</button><button class="btn sm ghost" data-d="${n.id}" aria-label="Delete">✕</button></div>`).join("")
+  const list = S.notes.filter(n => !q || (n.title||"").toLowerCase().includes(q) || n.text.toLowerCase().includes(q));
+  // notes whose heading matches come first
+  if (q) list.sort((x,y) => ((y.title||"").toLowerCase().includes(q)) - ((x.title||"").toLowerCase().includes(q)));
+  $("#noteList").innerHTML = list.length ? list.map(n => `<div class="li"><div class="body">
+      ${n.title?`<div style="font-weight:800">${esc(n.title)}</div>`:""}
+      <div style="white-space:pre-wrap">${esc(n.text)}</div>
+      ${n.original?`<details style="margin-top:6px"><summary class="small muted" style="cursor:pointer">What you wrote</summary><div class="small" style="white-space:pre-wrap;margin-top:4px">${esc(n.original)}</div></details>`:""}
+      <div class="meta">${fmtTime(n.ts)}${n.ai?" · organised by AI":""}${n.remCount?" · "+n.remCount+" reminder"+(n.remCount>1?"s":"")+" added":""}</div></div>
+      <button class="btn sm" data-r="${n.id}" aria-label="Read aloud">▶</button><button class="btn sm ghost" data-d="${n.id}" aria-label="Delete">✕</button></div>`).join("")
     : `<div class="empty">${q?"No notes match.":"No notes yet. Try saying: “Save this idea: …” on the Assist screen."}</div>`;
-  $("#noteList").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{ const n=S.notes.find(x=>x.id===b.dataset.r); n&&speak(n.text); });
+  $("#noteList").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{ const n=S.notes.find(x=>x.id===b.dataset.r); n&&speak((n.title?n.title+". ":"")+n.text); });
   $("#noteList").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ S.notes=S.notes.filter(x=>x.id!==b.dataset.d); save(); renderNotes(); });
 }
 $("#noteSearch").oninput = renderNotes;
-$("#noteAdd").onclick = () => { const t=$("#noteIn").value.trim(); if(!t) return; S.notes.unshift({id:uid(), text:t, ts:Date.now()}); $("#noteIn").value=""; save(); renderNotes(); toast("Note saved"); };
+$("#noteAdd").onclick = () => {
+  const t=$("#noteIn").value.trim(); if(!t) return;
+  S.notes.unshift({id:uid(), title:$("#noteTitle").value.trim(), text:t, ts:Date.now()});
+  $("#noteIn").value=""; $("#noteTitle").value=""; save(); renderNotes(); toast("Note saved");
+};
+
+/* AI organise: messy paragraph -> timetable + suggested reminders the user can tick */
+let aiPlan = null;
+$("#noteAI").onclick = async () => {
+  const text = $("#noteIn").value.trim();
+  if (!text) { toast("Write or speak something first, then tap Organise."); return; }
+  const btn = $("#noteAI"); btn.disabled = true; btn.textContent = "Organising…";
+  try {
+    const now = new Date();
+    const r = await ask({system:`You organise a person's messy notes about their day, routine or plans.
+Current local date and time: ${now.toString()} (today is ${now.toLocaleDateString("en-IN",{weekday:"long"})}).
+1. "title": a short heading (max 6 words).
+2. "organised": a clean, easy timetable or plan as plain text. One item per line, sorted by time, like "7:00 AM – Gym". Group by day if several days. Put items without a time under "Anytime:". Keep the user's language. Don't add things they didn't say.
+3. "reminders": ONLY for items where the user mentioned a time or date. Use the next upcoming occurrence (if the time today has passed and no date was given, use tomorrow). "when" is a local datetime like 2026-10-21T20:00. "text" is short.
+Reply ONLY JSON {"title": string, "organised": string, "reminders": [{"text": string, "when": string}]}`,
+      parts:[{text}], json:true});
+    const rems = (Array.isArray(r.reminders)?r.reminders:[]).map(x=>({text:String(x.text||""), when:Date.parse(x.when)})).filter(x=>x.text && !isNaN(x.when));
+    aiPlan = {title: $("#noteTitle").value.trim() || String(r.title||"My plan"), organised: String(r.organised||r.reply||"").trim(), original:text, rems};
+    showPlan();
+  } catch(e){ toast(e.message, 6000); }
+  finally { btn.disabled=false; btn.textContent="✨ Organise with AI"; }
+};
+function showPlan(){
+  const c = $("#aiPlan"); const p = aiPlan; if(!p){ c.hidden=true; return; }
+  c.innerHTML = `<span class="eyebrow">AI organised · check before saving</span>
+    <div style="font-weight:800;font-size:17px">${esc(p.title)}</div>
+    <div class="small" style="white-space:pre-wrap">${esc(p.organised)}</div>
+    ${p.rems.length ? `<span class="eyebrow" style="margin-top:6px">Add as reminders</span>` + p.rems.map((x,i)=>`<label class="row nowrap small" style="gap:10px"><input type="checkbox" data-i="${i}" checked style="width:20px;height:20px"><span class="grow">${esc(x.text)} · <b>${fmtTime(x.when)}</b>${x.when<Date.now()?" (time has passed)":""}</span></label>`).join("") : `<div class="small muted">No date or time found, so no reminders.</div>`}
+    <div class="row"><button class="btn primary grow" id="planSave">Save${p.rems.length?" note + reminders":" note"}</button><button class="btn" id="planCancel">Cancel</button></div>`;
+  c.hidden = false; c.scrollIntoView({behavior:"smooth", block:"start"});
+  $("#planCancel").onclick = () => { aiPlan=null; showPlan(); };
+  $("#planSave").onclick = () => {
+    const picked = [...c.querySelectorAll("input[data-i]:checked")].map(i=>p.rems[+i.dataset.i]);
+    for (const x of picked) S.reminders.push({id:uid(), text:x.text, when:x.when, done:x.when<Date.now(), rings:+S.settings.remRings||1});
+    S.reminders.sort((a,b)=>a.when-b.when);
+    S.notes.unshift({id:uid(), title:p.title, text:p.organised, original:p.original, ai:true, remCount:picked.length, ts:Date.now()});
+    save(); aiPlan=null; showPlan(); $("#noteIn").value=""; $("#noteTitle").value=""; renderNotes();
+    if (picked.length) askNotify();
+    toast("Saved" + (picked.length ? " with "+picked.length+" reminder"+(picked.length>1?"s":"") : ""));
+  };
+}
 let nRec=null;
 $("#noteMic").onclick = async () => {
   if (nRec && nRec.on) {
@@ -1157,7 +1216,7 @@ $("#noteMic").onclick = async () => {
 /* reminders */
 function renderRem(){
   const list = S.reminders;
-  $("#remList").innerHTML = list.length ? list.map(r => `<div class="li"><div class="body"><div style="${r.done?"text-decoration:line-through;color:var(--muted)":""}">${esc(r.text)}</div><div class="meta">${fmtTime(r.when)}${!r.done && r.when<Date.now()?" · missed":""}</div></div><button class="btn sm ghost" data-d="${r.id}" aria-label="Delete">✕</button></div>`).join("")
+  $("#remList").innerHTML = list.length ? list.map(r => `<div class="li"><div class="body"><div style="${r.done?"text-decoration:line-through;color:var(--muted)":""}">${esc(r.text)}</div><div class="meta">${fmtTime(r.when)}${(r.rings||1)>1?" · rings "+r.rings+" times":""}${!r.done && r.when<Date.now()?" · missed":""}</div></div><button class="btn sm ghost" data-d="${r.id}" aria-label="Delete">✕</button></div>`).join("")
     : `<div class="empty">No reminders. You can also say “Remind me to call Amma at 6 PM”.</div>`;
   $("#remList").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ S.reminders=S.reminders.filter(x=>x.id!==b.dataset.d); save(); renderRem(); });
 }
@@ -1165,19 +1224,47 @@ function askNotify(){ try { if (window.Notification && Notification.permission==
 $("#remAdd").onclick = () => {
   const t=$("#remText").value.trim(), w=Date.parse($("#remWhen").value);
   if(!t||isNaN(w)) { toast("Add what and when."); return; }
-  S.reminders.push({id:uid(), text:t, when:w, done:false}); S.reminders.sort((a,b)=>a.when-b.when); save();
+  S.reminders.push({id:uid(), text:t, when:w, done:false, rings:+$("#remRings").value||1}); S.reminders.sort((a,b)=>a.when-b.when); save();
   $("#remText").value=""; renderRem(); toast("Reminder set for "+fmtTime(w)); askNotify();
 };
 setInterval(() => {
   const now = Date.now(); let fired=false;
   for (const r of S.reminders) if (!r.done && r.when<=now && now-r.when < 6*3600e3) {
     r.done = true; fired = true;
-    toast("⏰ "+r.text, 8000); speak("Reminder: "+r.text);
-    try { navigator.vibrate?.([300,150,300]); } catch(e){}
+    ringReminder(r);
     try { if (window.Notification && Notification.permission==="granted") new Notification("Muru reminder", {body:r.text}); } catch(e){}
   }
   if (fired) { save(); if(memCur==="rem") renderRem(); }
 }, 15000);
+$("#remRings").value = String(S.settings.remRings||1);
+$("#remRings").onchange = e => { S.settings.remRings = +e.target.value; save(); };
+/* ringing: a chime + spoken reminder, repeated as many times as the user chose; tap the message to stop */
+let ringT = null;
+function chime(){
+  const c = ctx(); if(!c) return; if (c.state==="suspended") c.resume();
+  const t = c.currentTime;
+  [[880,0],[1175,.18],[880,.36],[1175,.54]].forEach(([f,d]) => {
+    const o=c.createOscillator(), g=c.createGain(); o.type="sine"; o.frequency.value=f;
+    g.gain.setValueAtTime(0,t+d); g.gain.linearRampToValueAtTime(.35,t+d+.02); g.gain.exponentialRampToValueAtTime(.001,t+d+.16);
+    o.connect(g); g.connect(c.destination); o.start(t+d); o.stop(t+d+.18);
+  });
+}
+function stopRinging(){ clearTimeout(ringT); ringT=null; stopSpeaking(); $("#toast").hidden = true; }
+function ringReminder(r){
+  stopRinging();
+  const total = Math.max(1, +r.rings||1); let n = 0;
+  try { if (window.Notification && Notification.permission==="granted") new Notification("Muru reminder", {body:r.text}); } catch(e){}
+  const once = () => {
+    n++;
+    toast("⏰ "+r.text+(total>1?" ("+n+"/"+total+") · tap to stop":""), 60000);
+    chime(); try { navigator.vibrate?.([300,150,300]); } catch(e){}
+    setTimeout(()=>speak("Reminder: "+r.text), 900);
+    if (n < total) ringT = setTimeout(once, 8000);
+    else ringT = setTimeout(()=>{ ringT=null; $("#toast").hidden = true; }, 8000);
+  };
+  once();
+}
+$("#toast").addEventListener("click", () => { if (ringT) stopRinging(); });
 /* photos */
 async function renderPhotos(){
   const all = await photoAll();
@@ -1190,31 +1277,78 @@ async function renderPhotos(){
   });
 }
 /* meetings */
+/* Each meeting keeps its recording on the phone until a summary is made,
+   so if Gemini fails (limit, busy, no internet) the user can tap Retry instead of losing it. */
 function renderMeet(){
-  $("#meetList").innerHTML = S.meetings.length ? S.meetings.map(m => `<div class="li"><div class="body"><div style="font-weight:700">${esc(m.title||"Meeting")}</div><div class="meta">${fmtTime(m.ts)} · ${mmss(m.secs||0)}</div><div class="small" style="margin-top:6px;white-space:pre-wrap">${esc(m.summary||"")}</div>${(m.actions||[]).length?`<div class="small" style="margin-top:6px"><b>Action items</b><br>${m.actions.map(a=>"• "+esc(a)).join("<br>")}</div>`:""}</div><button class="btn sm ghost" data-d="${m.id}" aria-label="Delete">✕</button></div>`).join("")
-    : `<div class="empty">No meetings yet.</div>`;
-  $("#meetList").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ S.meetings=S.meetings.filter(x=>x.id!==b.dataset.d); save(); renderMeet(); });
+  $("#meetList").innerHTML = S.meetings.length ? S.meetings.map(m => {
+    const head = `<div style="font-weight:700">${esc(m.title||"Meeting")}</div><div class="meta">${fmtTime(m.ts)} · ${mmss(m.secs||0)}</div>`;
+    let body;
+    if (m.status==="working") body = `<div class="small muted" style="margin-top:6px">Writing summary…</div>`;
+    else if (m.status==="failed") body = `<div class="small" style="margin-top:6px;color:var(--danger)">${esc(m.error||"Summary failed.")}</div><div class="row" style="margin-top:8px"><button class="btn sm primary" data-retry="${m.id}">Retry summary</button></div>`;
+    else body = `<div class="small" style="margin-top:6px;white-space:pre-wrap">${esc(m.summary||"")}</div>`
+      + ((m.points||[]).length ? `<div class="small" style="margin-top:8px"><b>Key points</b><br>${m.points.map(a=>"• "+esc(a)).join("<br>")}</div>` : "")
+      + ((m.actions||[]).length ? `<div class="small" style="margin-top:8px"><b>Action items</b><br>${m.actions.map(a=>"• "+esc(a)).join("<br>")}</div>` : "")
+      + (m.transcript ? `<details style="margin-top:8px"><summary class="small" style="cursor:pointer;font-weight:700">Full text (transcript)</summary><div class="small" style="margin-top:6px;white-space:pre-wrap">${esc(m.transcript)}</div></details>` : "")
+      + `<div class="row" style="margin-top:8px"><button class="btn sm" data-copy="${m.id}">Copy</button><button class="btn sm" data-note="${m.id}">Save as note</button></div>`;
+    return `<div class="li"><div class="body">${head}${body}</div><button class="btn sm ghost" data-d="${m.id}" aria-label="Delete">✕</button></div>`;
+  }).join("") : `<div class="empty">No meetings yet.</div>`;
+  const find = id => S.meetings.find(x=>x.id===id);
+  const asText = m => [m.title||"Meeting", fmtTime(m.ts), "", m.summary||"", (m.points||[]).length?"\nKey points:\n"+m.points.map(x=>"• "+x).join("\n"):"", (m.actions||[]).length?"\nAction items:\n"+m.actions.map(x=>"• "+x).join("\n"):""].join("\n").trim();
+  $("#meetList").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ const m=find(b.dataset.d); if(m?.audioId) photoDel(m.audioId); S.meetings=S.meetings.filter(x=>x.id!==b.dataset.d); save(); renderMeet(); });
+  $("#meetList").querySelectorAll("[data-retry]").forEach(b=>b.onclick=()=>retryMeeting(b.dataset.retry));
+  $("#meetList").querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{ try{ await navigator.clipboard.writeText(asText(find(b.dataset.copy))); toast("Copied"); }catch(e){ toast("Couldn't copy here."); } });
+  $("#meetList").querySelectorAll("[data-note]").forEach(b=>b.onclick=()=>{ const m=find(b.dataset.note); S.notes.unshift({id:uid(), title:m.title||"Meeting", text:asText(m), ts:Date.now()}); save(); toast("Saved in Notes"); });
 }
-async function summarizeMeeting(blob, secs){
-  $("#meetHint").textContent = "Writing summary… this can take a minute";
-  $("#meetOrb").classList.add("busy");
+const MEET_PROMPT = `You summarize recorded meetings. The audio may mix Kannada, Hindi, Telugu and English. Write in English.
+Reply ONLY JSON {"title": short title, "summary": 3-6 sentence summary, "points": [key points discussed], "actions": [action items with owner if said], "transcript": "what was said, written out as text in English, with speaker changes on new lines"}.
+If the audio is silent or has no speech, say so in "summary" and leave the lists empty.`;
+async function runMeeting(m, blob){
+  m.status = "working"; save(); renderMeet();
+  $("#meetOrb").classList.add("busy"); $("#meetHint").textContent = "Writing summary… this can take a minute";
   try {
     const p = await audioPart(blob, 8000);
-    const r = await ask({system:"You summarize recorded meetings. The audio may mix Kannada, Hindi, Telugu and English. Write in English. Reply ONLY JSON {\"title\": short title, \"summary\": 3-6 sentence summary, \"actions\": [action items with owner if said]}.", parts:[{text:"Summarize this meeting recording."}, p], json:true});
-    S.meetings.unshift({id:uid(), ts:Date.now(), secs, title:r.title, summary:r.summary||r.reply||"", actions:Array.isArray(r.actions)?r.actions.map(String):[]});
-    save(); renderMeet(); toast("Meeting summary saved");
-  } catch(e){ toast(e.message, 5000); }
-  finally { $("#meetOrb").classList.remove("busy"); $("#meetHint").textContent = "Tap to start recording"; }
+    const r = await ask({system:MEET_PROMPT, parts:[{text:"Summarize this meeting recording."}, p], json:true, timeoutMs:180000});
+    Object.assign(m, {status:"done", title:r.title||"Meeting", summary:r.summary||r.reply||"", points:Array.isArray(r.points)?r.points.map(String):[], actions:Array.isArray(r.actions)?r.actions.map(String):[], transcript:String(r.transcript||""), error:""});
+    if (m.audioId) { photoDel(m.audioId); m.audioId = null; }
+    toast("Meeting summary saved");
+  } catch(e){
+    Object.assign(m, {status:"failed", error:e.message + " Your recording is kept, tap Retry."});
+  } finally {
+    save(); renderMeet();
+    $("#meetOrb").classList.remove("busy"); $("#meetHint").textContent = "Tap to start recording";
+  }
+}
+async function summarizeMeeting(blob, secs){
+  const m = {id:uid(), ts:Date.now(), secs, title:"Meeting", audioId:uid(), status:"working"};
+  await photoPut({id:m.audioId, kind:"audio", ts:m.ts, blob});
+  S.meetings.unshift(m); save(); renderMeet();
+  runMeeting(m, blob);
+}
+async function retryMeeting(id){
+  const m = S.meetings.find(x=>x.id===id); if(!m) return;
+  const a = m.audioId && await photoGet(m.audioId);
+  if (!a) { m.error = "The recording is no longer on this phone, so it can't be summarized again."; save(); renderMeet(); return; }
+  runMeeting(m, a.blob);
 }
 let mRec=null;
+async function stopMeeting(){
+  const orb=$("#meetOrb"); if(!mRec) return;
+  orb.classList.remove("rec"); const secs=(Date.now()-mRec.t0)/1000; const r=mRec; mRec=null;
+  try{ r.wake?.release(); }catch(e){}
+  const blob = await (r.on ? r.stop() : r.done);
+  if (!blob || blob.size < 1000) { toast("Nothing was recorded. Check microphone access and try again."); return; }
+  summarizeMeeting(blob, secs);
+}
 $("#meetOrb").onclick = async () => {
   const orb=$("#meetOrb");
-  if (mRec && mRec.on) { orb.classList.remove("rec"); const secs=(Date.now()-mRec.t0)/1000; const blob=await mRec.stop(); mRec=null; summarizeMeeting(blob, secs); return; }
-  mRec = new Rec(720, s => { $("#meetHint").textContent = "Recording "+mmss(s)+" · tap to stop"; if(s>=720){ orb.classList.remove("rec"); } });
+  if (mRec) { stopMeeting(); return; }
+  mRec = new Rec(720, s => { $("#meetHint").textContent = "Recording "+mmss(s)+" · tap to stop"; if(s>=720) stopMeeting(); });
   try { await mRec.start(); orb.classList.add("rec"); try{ mRec.wake = await navigator.wakeLock?.request("screen"); }catch(e){} }
   catch(e){ mRec=null; micErr(e); }
 };
 $("#meetFile").onchange = e => { const f=e.target.files[0]; e.target.value=""; if(f) summarizeMeeting(f, 0); };
+// a summary that was mid-way when the page closed can be retried
+for (const m of S.meetings) if (m.status==="working") { m.status="failed"; m.error="The page closed before the summary finished. Tap Retry."; }
 
 /* ================= SOS ================= */
 function renderContacts(){
