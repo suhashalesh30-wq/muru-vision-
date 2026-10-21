@@ -1,0 +1,1213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Muru">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Muru Vision</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#0F2A2A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Kannada:wght@400;600&family=Noto+Sans+Telugu:wght@400;600&display=swap">
+<style>
+/* Layout: a phone-first "device companion" — status strip, one working surface, lens-shaped action orb, bottom dock. */
+:root{
+  --bg:#EEF2EF; --surface:#FFFFFF; --sunk:#E2E9E5; --line:#CAD6D0;
+  --fg:#11211F; --muted:#56706A;
+  --accent:#0E7A74; --accent-ink:#FFFFFF; --accent-soft:#D3ECE8;
+  --marigold:#E89A1E; --marigold-soft:#FBEBCB;
+  --danger:#C8322B; --danger-soft:#F8DCD9; --ok:#2F8A4A;
+  --shadow:0 1px 2px rgba(17,33,31,.06),0 8px 24px rgba(17,33,31,.07);
+  --display:"Bricolage Grotesque","Figtree",system-ui,sans-serif;
+  --body:"Figtree","Noto Sans Kannada","Noto Sans Telugu","Noto Sans Devanagari",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:16px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0C1716; --surface:#13211F; --sunk:#0F1C1A; --line:#24403B;
+  --fg:#E6EFEC; --muted:#8FAAA3;
+  --accent:#3CC3B8; --accent-ink:#06211E; --accent-soft:#163A36;
+  --marigold:#F3B348; --marigold-soft:#3A2E14;
+  --danger:#F0605A; --danger-soft:#3C1A18; --ok:#5CC97B;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0C1716; --surface:#13211F; --sunk:#0F1C1A; --line:#24403B;
+  --fg:#E6EFEC; --muted:#8FAAA3;
+  --accent:#3CC3B8; --accent-ink:#06211E; --accent-soft:#163A36;
+  --marigold:#F3B348; --marigold-soft:#3A2E14;
+  --danger:#F0605A; --danger-soft:#3C1A18; --ok:#5CC97B;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35);
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+.app{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 calc(92px + env(safe-area-inset-bottom,0px))}
+/* top strip */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;gap:10px;padding-block:12px 10px}
+.mark{width:34px;height:34px;border-radius:50%;border:2px solid var(--fg);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:15px;flex:none}
+.brand{display:flex;flex-direction:column;min-width:0}
+.brand b{font-family:var(--display);font-weight:800;letter-spacing:.02em;font-size:17px}
+.brand small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 10px;border-radius:99px;background:var(--sunk);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--marigold)} .dot.bad{background:var(--danger)}
+.iconbtn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;flex:none}
+.iconbtn svg{width:20px;height:20px}
+/* views */
+.view{display:flex;flex-direction:column;gap:14px;padding-top:6px}
+.view[hidden]{display:none!important}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card.flat{background:transparent;border-style:dashed;box-shadow:none}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row.nowrap{flex-wrap:nowrap}
+.grow{flex:1;min-width:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 14px;font-weight:600;display:inline-flex;align-items:center;gap:8px;justify-content:center;min-height:44px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.warm{background:var(--marigold-soft);border-color:transparent;color:var(--fg)}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:34px;padding:6px 10px;font-size:13px;border-radius:10px}
+.btn:disabled{opacity:.5;cursor:default}
+.btn svg{width:18px;height:18px}
+input[type=text],input[type=password],input[type=tel],input[type=datetime-local],select,textarea{width:100%;background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:11px 12px;min-height:44px;min-width:0}
+textarea{resize:vertical;min-height:80px}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:7px 13px;font-size:13px;font-weight:600}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+/* the orb: a camera lens */
+.orbwrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0 4px}
+.orb{position:relative;width:132px;height:132px;border-radius:50%;border:none;background:radial-gradient(circle at 50% 50%,var(--accent) 0 34%,transparent 35%),radial-gradient(circle at 50% 50%,var(--fg) 0 52%,transparent 53%),var(--sunk);box-shadow:inset 0 0 0 10px var(--surface),inset 0 0 0 11px var(--line),var(--shadow);display:grid;place-items:center;transition:transform .15s}
+.orb:active{transform:scale(.97)}
+.orb svg{width:34px;height:34px;color:var(--accent-ink);position:relative}
+.orb::after{content:"";position:absolute;width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.55);top:38%;left:38%}
+.orb.rec{background:radial-gradient(circle at 50% 50%,var(--danger) 0 34%,transparent 35%),radial-gradient(circle at 50% 50%,var(--fg) 0 52%,transparent 53%),var(--sunk)}
+.orb.rec::before{content:"";position:absolute;inset:-6px;border-radius:50%;border:3px solid var(--danger);animation:pulse 1.2s ease-out infinite}
+.orb.busy::before{content:"";position:absolute;inset:-6px;border-radius:50%;border:3px solid transparent;border-top-color:var(--marigold);animation:spin 1s linear infinite}
+.orb.small{width:92px;height:92px}
+.orb.small svg{width:26px;height:26px}
+@keyframes pulse{from{transform:scale(1);opacity:1}to{transform:scale(1.18);opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.orb.rec::before,.orb.busy::before{animation:none}}
+.orbhint{font-size:13px;color:var(--muted);text-align:center;min-height:20px;font-variant-numeric:tabular-nums}
+/* chat */
+.chat{display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;padding:10px 13px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.me{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:5px}
+.msg.ai{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:5px}
+.msg .act{display:block;margin-top:6px;font-size:12px;font-weight:700;color:var(--accent)}
+.msg.me .act{color:inherit;opacity:.85}
+.sugg{display:flex;flex-wrap:wrap;gap:8px}
+.composer{display:flex;gap:8px}
+/* translate */
+.langbar{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:end}
+.swap{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center}
+.result{border-radius:var(--r);padding:16px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.result .from{color:var(--muted);font-size:14px}
+.result .to{font-size:22px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.result .roman{font-size:13px;color:var(--muted);font-style:italic}
+.tag{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:6px;background:var(--marigold-soft);color:var(--fg);align-self:flex-start}
+.convo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.speakbtn{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:700;min-height:96px}
+.speakbtn .ring{width:44px;height:44px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+.speakbtn.them .ring{background:var(--marigold);color:#2a1a00}
+.speakbtn.rec .ring{background:var(--danger);color:#fff}
+.speakbtn small{font-weight:500;color:var(--muted);font-size:12px}
+.hist{display:flex;flex-direction:column;gap:8px}
+.hitem{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.hitem:first-child{border-top:none}
+.hitem .t{flex:1;min-width:0;overflow-wrap:anywhere}
+/* see */
+.preview{width:100%;max-width:100%;aspect-ratio:4/3;border-radius:var(--r);background:var(--sunk);border:1px solid var(--line);display:grid;place-items:center;overflow:hidden;position:relative}
+.preview img,.preview video{width:100%;height:100%;object-fit:cover}
+.preview .ph{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--muted);font-size:13px;text-align:center;padding:16px}
+.answer{white-space:pre-wrap;overflow-wrap:anywhere}
+/* memory */
+.seg{display:grid;grid-template-columns:repeat(5,1fr);background:var(--sunk);border-radius:12px;padding:4px;gap:4px;border:1px solid var(--line)}
+.seg button{border:none;background:transparent;border-radius:9px;padding:8px 2px;font-size:12px;font-weight:700;color:var(--muted)}
+.seg button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:var(--shadow)}
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
+.li:first-child{border-top:none}
+.li .body{flex:1;min-width:0;overflow-wrap:anywhere}
+.li .meta{font-size:12px;color:var(--muted)}
+.thumb{width:56px;height:56px;border-radius:12px;object-fit:cover;background:var(--sunk);flex:none}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;display:block}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+/* sos */
+.sosbtn{width:190px;height:190px;border-radius:50%;border:none;margin:4px auto;display:grid;place-items:center;background:radial-gradient(circle,var(--danger) 0 58%,var(--danger-soft) 59%);color:#fff;font-family:var(--display);font-weight:800;font-size:40px;letter-spacing:.04em;position:relative;touch-action:none;user-select:none;-webkit-user-select:none}
+.sosbtn svg.prog{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.sosbtn svg.prog circle{fill:none;stroke:#fff;stroke-width:5;stroke-dasharray:578;stroke-dashoffset:578}
+.sosacts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.notice{background:var(--marigold-soft);border-radius:12px;padding:10px 12px;font-size:13px}
+.notice.danger{background:var(--danger-soft)}
+/* dock */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
+  padding:6px max(10px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px))}
+.dock nav{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
+.dock button{border:none;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:11px;font-weight:700;color:var(--muted);border-radius:12px}
+.dock button svg{width:22px;height:22px}
+.dock button[aria-current="page"]{color:var(--accent)}
+.dock button.sos[aria-current="page"],.dock button.sos{color:var(--danger)}
+/* overlays */
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(6,14,13,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet[hidden]{display:none!important}
+.sheet .panel{background:var(--bg);width:100%;max-width:560px;max-height:92%;overflow:auto;border-radius:22px 22px 0 0;
+  padding:18px max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
+.big{position:fixed;inset:0;z-index:50;background:var(--fg);color:var(--bg);display:flex;flex-direction:column;justify-content:center;gap:18px;
+  padding:24px max(24px,env(safe-area-inset-right,0px)) 24px max(24px,env(safe-area-inset-left,0px))}
+.big[hidden]{display:none!important}
+.big .bt{font-size:clamp(28px,8vw,52px);font-weight:700;line-height:1.25;overflow-wrap:anywhere}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);box-shadow:var(--shadow)}
+.toast[hidden]{display:none!important}
+.status{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13px}
+.status .s{font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:6px;align-self:start;text-align:center}
+.s.live{background:var(--accent-soft);color:var(--accent)}
+.s.part{background:var(--marigold-soft);color:var(--fg)}
+.s.soon{background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
+details summary{cursor:pointer;font-weight:700}
+.kbd{font-variant-numeric:tabular-nums}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="mark" aria-hidden="true">m</div>
+    <div class="brand"><b>MURU VISION</b><small id="greet">Human Assistant Cam · phone mode</small></div>
+    <div class="spacer"></div>
+    <span class="pill" id="aiPill" title="Which AI is answering"><span class="dot" id="aiDot"></span><span id="aiLabel">Checking AI…</span></span>
+    <button class="iconbtn" id="openSettings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </header>
+
+  <!-- ASSIST -->
+  <section class="view" id="v-assist" aria-label="Assistant">
+    <div class="orbwrap">
+      <button class="orb" id="assistOrb" aria-label="Tap and speak to Muru"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <div class="orbhint" id="assistHint">Tap the lens and speak. Tap again to send.</div>
+    </div>
+    <div class="sugg" id="assistSugg">
+      <button class="chip" data-q="What can you do?">What can you do?</button>
+      <button class="chip" data-q="Note: meeting with investors on Friday">Make a note</button>
+      <button class="chip" data-q="Remind me to take my medicine at 8 PM">Set a reminder</button>
+      <button class="chip" data-q="Where did I keep my wallet?">Where's my wallet?</button>
+      <button class="chip" data-q="Find the nearest hospital">Nearest hospital</button>
+    </div>
+    <div class="chat" id="chat" aria-live="polite"></div>
+    <form class="composer" id="assistForm">
+      <input type="text" id="assistInput" placeholder="Or type to Muru…" autocomplete="off">
+      <button class="btn primary" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </form>
+    <button class="btn ghost sm" id="clearChat" style="align-self:flex-start">Clear conversation</button>
+  </section>
+
+  <!-- TRANSLATE -->
+  <section class="view" id="v-translate" aria-label="Translate" hidden>
+    <div class="row nowrap"><h2 class="grow">Talk across languages</h2></div>
+    <div class="langbar">
+      <label class="f">I speak<select id="myLang"></select></label>
+      <button class="swap" id="swapLang" aria-label="Swap languages"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg></button>
+      <label class="f">They speak<select id="theirLang"></select></label>
+    </div>
+    <div class="convo">
+      <button class="speakbtn" id="spkMe"><span class="ring"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span id="spkMeL">I speak</span><small id="spkMeS">Kannada → Hindi</small></button>
+      <button class="speakbtn them" id="spkThem"><span class="ring"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><span>They speak</span><small id="spkThemS">Hindi → Kannada</small></button>
+    </div>
+    <div class="row"><button class="btn warm grow" id="spkAuto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>Auto-detect: anyone speaks</button></div>
+    <div class="orbhint" id="trHint">Tap a button, speak, then tap again.</div>
+    <form class="composer" id="trForm">
+      <input type="text" id="trInput" placeholder="Or type a sentence…" autocomplete="off">
+      <button class="btn primary" type="submit">Translate</button>
+    </form>
+    <div id="trResult"></div>
+    <div class="card">
+      <div class="row nowrap"><span class="eyebrow grow">Recent</span><button class="btn ghost sm" id="trClear">Clear</button></div>
+      <div class="hist" id="trHist"></div>
+    </div>
+  </section>
+
+  <!-- SEE -->
+  <section class="view" id="v-see" aria-label="See" hidden>
+    <h2>Show Muru what you see</h2>
+    <div class="preview" id="seePrev"><div class="ph"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="4"/></svg>Take a photo of a product, a sign, a menu or anything around you.</div></div>
+    <div class="row">
+      <label class="btn primary grow" for="camIn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="4"/></svg>Take photo</label>
+      <label class="btn grow" for="galIn">Choose photo</label>
+      <input type="file" id="camIn" accept="image/*" capture="environment" hidden>
+      <input type="file" id="galIn" accept="image/*" hidden>
+    </div>
+    <div class="chips" id="seeModes">
+      <button class="chip" aria-pressed="true" data-m="describe">What is this?</button>
+      <button class="chip" aria-pressed="false" data-m="read">Read the text</button>
+      <button class="chip" aria-pressed="false" data-m="translate">Translate the text</button>
+      <button class="chip" aria-pressed="false" data-m="product">Product help</button>
+      <button class="chip" aria-pressed="false" data-m="safety">Is it safe?</button>
+    </div>
+    <form class="composer" id="seeForm">
+      <input type="text" id="seeQ" placeholder="Ask your own question about the photo (optional)" autocomplete="off">
+      <button class="btn primary" type="submit" id="seeAsk">Ask</button>
+    </form>
+    <div class="card" id="seeOut" hidden>
+      <div class="answer" id="seeAns"></div>
+      <div class="row">
+        <button class="btn sm" id="seeSpeak">Read aloud</button>
+        <button class="btn sm" id="seeSave">Save photo</button>
+        <button class="btn sm" id="seeKeep">Keep an eye on it</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row nowrap"><div class="grow"><span class="eyebrow">Live look</span><h3 style="font-size:17px;margin-top:2px">Continuous vision</h3></div><button class="btn sm" id="liveBtn">Start</button></div>
+      <p class="small muted" style="margin:0">While this screen stays open, Muru takes a small snapshot every <b id="liveEvery">20</b> seconds and keeps the last 30 on your phone only. Ask "what happened?" to get a summary. Nothing is sent until you ask.</p>
+      <div class="preview" id="livePrev" hidden><video id="liveVid" playsinline muted></video></div>
+      <div class="row"><span class="small muted grow kbd" id="liveCount">0 snapshots</span><button class="btn sm warm" id="liveAsk" disabled>What happened?</button></div>
+      <div class="answer small" id="liveAns"></div>
+    </div>
+  </section>
+
+  <!-- MEMORY -->
+  <section class="view" id="v-memory" aria-label="Memory" hidden>
+    <h2>Your memory</h2>
+    <div class="seg" role="tablist" id="memSeg">
+      <button role="tab" aria-selected="true" data-p="notes">Notes</button>
+      <button role="tab" aria-selected="false" data-p="rem">Reminders</button>
+      <button role="tab" aria-selected="false" data-p="eye">Keep eye</button>
+      <button role="tab" aria-selected="false" data-p="photos">Photos</button>
+      <button role="tab" aria-selected="false" data-p="meet">Meetings</button>
+    </div>
+
+    <div id="p-notes" class="view" style="padding:0">
+      <div class="card">
+        <div class="row nowrap"><textarea id="noteIn" placeholder="Write a note, or tap the mic to speak it"></textarea></div>
+        <div class="row"><button class="btn primary grow" id="noteAdd">Save note</button><button class="btn" id="noteMic" aria-label="Speak a note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span id="noteMicL">Speak</span></button></div>
+      </div>
+      <input type="text" id="noteSearch" placeholder="Search notes">
+      <div class="card"><div class="list" id="noteList"></div></div>
+    </div>
+
+    <div id="p-rem" class="view" style="padding:0" hidden>
+      <div class="card">
+        <label class="f">What<input type="text" id="remText" placeholder="Take medicine"></label>
+        <label class="f">When<input type="datetime-local" id="remWhen"></label>
+        <button class="btn primary" id="remAdd">Add reminder</button>
+        <p class="small muted" style="margin:0" id="remNote">Reminders ring while Muru is open on your phone.</p>
+      </div>
+      <div class="card"><div class="list" id="remList"></div></div>
+    </div>
+
+    <div id="p-eye" class="view" style="padding:0" hidden>
+      <div class="card">
+        <p class="small muted" style="margin:0">Snap the thing and where you left it. Later, ask Muru "where is my wallet?"</p>
+        <label class="f">Item<input type="text" id="eyeName" placeholder="Bike key"></label>
+        <label class="f">Where (optional, Muru can describe it from the photo)<input type="text" id="eyeWhere" placeholder="On the shelf near the door"></label>
+        <div class="row"><label class="btn primary grow" for="eyeCam">Snap and save</label><input type="file" id="eyeCam" accept="image/*" capture="environment" hidden><button class="btn" id="eyeNoPhoto">Save without photo</button></div>
+      </div>
+      <div class="card"><div class="list" id="eyeList"></div></div>
+    </div>
+
+    <div id="p-photos" class="view" style="padding:0" hidden>
+      <div class="card"><div class="grid" id="photoGrid"></div><div class="empty" id="photoEmpty">Photos you save from See or Keep an eye show up here. They stay on this phone.</div></div>
+    </div>
+
+    <div id="p-meet" class="view" style="padding:0" hidden>
+      <div class="card">
+        <div class="row nowrap"><div class="grow"><h3 style="font-size:17px">Meeting recorder</h3><p class="small muted" style="margin:2px 0 0">Records audio, then writes a summary and action items. Up to 12 minutes. Ask everyone before you record.</p></div></div>
+        <div class="orbwrap" style="padding:0"><button class="orb small" id="meetOrb" aria-label="Start meeting recording"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button><div class="orbhint" id="meetHint">Tap to start recording</div></div>
+        <label class="btn sm ghost" for="meetFile" style="align-self:center">Or summarize an audio file</label><input type="file" id="meetFile" accept="audio/*" hidden>
+      </div>
+      <div class="card"><div class="list" id="meetList"></div></div>
+    </div>
+  </section>
+
+  <!-- SOS -->
+  <section class="view" id="v-sos" aria-label="Emergency" hidden>
+    <h2 style="text-align:center">Emergency</h2>
+    <p class="small muted" style="text-align:center;margin:0">Press and hold for 2 seconds.</p>
+    <button class="sosbtn" id="sosBtn" aria-label="Hold for two seconds to start emergency mode">SOS<svg class="prog" viewBox="0 0 190 190"><circle cx="95" cy="95" r="92" id="sosRing"/></svg></button>
+    <div class="card" id="sosPanel" hidden>
+      <div class="notice danger"><b>Emergency mode is on.</b> Tap each button below to send. Muru can't send messages or call on its own in this phone version.</div>
+      <div class="small"><span class="eyebrow">Your message</span><div id="sosMsg" style="white-space:pre-wrap;margin-top:4px;overflow-wrap:anywhere"></div></div>
+      <div class="sosacts" id="sosActs"></div>
+      <button class="btn ghost sm" id="sosOff">Turn off emergency mode</button>
+    </div>
+    <div class="card">
+      <div class="row nowrap"><span class="eyebrow grow">Trusted contacts</span></div>
+      <div class="list" id="ctList"></div>
+      <div class="row"><input type="text" id="ctName" placeholder="Name" class="grow" style="flex:1 1 120px"><input type="tel" id="ctPhone" placeholder="Phone, e.g. 98xxxxxxxx" style="flex:1 1 150px"></div>
+      <button class="btn" id="ctAdd">Add contact</button>
+    </div>
+    <div class="card">
+      <label class="f">Medical info shared in SOS (optional)<textarea id="medInfo" placeholder="Blood group, allergies, medicines"></textarea></label>
+    </div>
+    <div class="small muted">India emergency number: <b>112</b>. Ambulance: <b>108</b>.</div>
+  </section>
+</div>
+
+<div class="dock"><nav aria-label="Main">
+  <button data-v="assist" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/></svg>Assist</button>
+  <button data-v="translate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h9M8.5 3v2M6 5c1 4 4 7 7 8M11 5c-1 4-4 7-7 8M13 21l4-10 4 10M14.5 17h5"/></svg>Translate</button>
+  <button data-v="see"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>See</button>
+  <button data-v="memory"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h3"/></svg>Memory</button>
+  <button data-v="sos" class="sos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/></svg>SOS</button>
+</nav></div>
+
+<!-- Settings sheet -->
+<div class="sheet" id="settings" hidden>
+  <div class="panel" role="dialog" aria-label="Settings">
+    <div class="row nowrap"><h2 class="grow">Settings</h2><button class="btn sm" id="closeSettings">Done</button></div>
+    <div class="card">
+      <span class="eyebrow">You</span>
+      <label class="f">Your name<input type="text" id="setName" placeholder="Suhas"></label>
+    </div>
+    <div class="card">
+      <span class="eyebrow">AI connection</span>
+      <label class="f">Gemini API key<input type="password" id="setKey" placeholder="Paste key from Google AI Studio" autocomplete="off"></label>
+      <div class="row"><button class="btn sm" id="showKey">Show</button><button class="btn sm primary" id="testKey">Test connection</button><span class="small muted grow" id="testOut"></span></div>
+      <p class="small muted" style="margin:0">Get a key at aistudio.google.com → "Get API key". It is saved only on this phone.</p>
+      <details><summary class="small">Advanced: model names</summary>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+          <label class="f">Main model<input type="text" id="setModel"></label>
+          <label class="f">Voice model<input type="text" id="setTts"></label>
+          <p class="small muted" style="margin:0">If a model stops working, Muru tries "gemini-flash-latest" and then "gemini-2.5-flash" automatically.</p>
+        </div>
+      </details>
+    </div>
+    <div class="card">
+      <span class="eyebrow">Voice</span>
+      <label class="f">Muru speaks answers<select id="setVoice"><option value="gemini">Yes, with Gemini voice (natural, needs internet)</option><option value="phone">Yes, with the phone's voice (fast)</option><option value="off">No, text only</option></select></label>
+      <label class="f">Speaking speed <span id="rateV" class="kbd">1.0×</span><input type="range" id="setRate" min="0.6" max="1.4" step="0.1"></label>
+    </div>
+    <div class="card">
+      <span class="eyebrow">Look</span>
+      <div class="chips" id="themeChips"><button class="chip" data-t="system">Phone setting</button><button class="chip" data-t="light">Light</button><button class="chip" data-t="dark">Dark</button></div>
+    </div>
+    <div class="card">
+      <span class="eyebrow">What works in this version</span>
+      <div class="status" id="statusList"></div>
+    </div>
+    <div class="card">
+      <span class="eyebrow">Privacy</span>
+      <p class="small muted" style="margin:0">Notes, reminders, photos and contacts are stored only on this phone. Audio, photos and text go to the AI only when you ask something.</p>
+      <button class="btn danger" id="wipe">Delete all my Muru data</button>
+      <div class="row" id="wipeConfirm" hidden><span class="small grow">This can't be undone.</span><button class="btn sm danger" id="wipeYes">Delete</button><button class="btn sm" id="wipeNo">Cancel</button></div>
+    </div>
+    <p class="small muted" style="margin:0;text-align:center">Muru Vision · prototype v0.1 · phone mode of the Human Assistant Cam</p>
+  </div>
+</div>
+
+<!-- Big show-to-them card -->
+<div class="big" id="big" hidden role="dialog" aria-label="Show this to the other person">
+  <div class="eyebrow" style="color:inherit;opacity:.7" id="bigLang"></div>
+  <div class="bt" id="bigText"></div>
+  <div class="row"><button class="btn" id="bigSpeak">Play again</button><button class="btn" id="bigClose">Close</button></div>
+</div>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(() => {
+"use strict";
+/* ---------- languages ---------- */
+const LANGS = [
+  {c:"kn", n:"Kannada", t:"kn-IN"},
+  {c:"hi", n:"Hindi", t:"hi-IN"},
+  {c:"en", n:"English", t:"en-IN"},
+  {c:"te", n:"Telugu", t:"te-IN"},
+];
+const L = c => LANGS.find(l=>l.c===c) || {c, n:c, t:c};
+
+/* ---------- storage ---------- */
+const KEY = "muru.v1";
+const DEF = {
+  settings:{name:"", key:"", model:"gemini-3.8-flash", tts:"gemini-3.8-flash-tts", voice:"gemini", rate:1, theme:"system", myLang:"kn", theirLang:"hi"},
+  chat:[], notes:[], reminders:[], items:[], contacts:[], medical:"", trHist:[], meetings:[]
+};
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY) || "null"); } catch(e) { S = null; }
+S = Object.assign(structuredClone(DEF), S || {});
+S.settings = Object.assign(structuredClone(DEF.settings), S.settings || {});
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
+
+/* photos in IndexedDB (fallback: memory) */
+const mem = new Map();
+const dbP = new Promise(res => {
+  try {
+    const r = indexedDB.open("muru", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("photos", {keyPath:"id"});
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => res(null);
+  } catch(e) { res(null); }
+});
+async function idb(mode, fn){
+  const db = await dbP; if(!db) return null;
+  return new Promise((res) => {
+    try { const tx = db.transaction("photos", mode); const req = fn(tx.objectStore("photos")); tx.oncomplete = () => res(req && req.result); tx.onerror = () => res(null); }
+    catch(e){ res(null); }
+  });
+}
+async function photoPut(p){ mem.set(p.id, p); await idb("readwrite", s => s.put(p)); }
+async function photoAll(){ const a = await idb("readonly", s => s.getAll()); return (a || [...mem.values()]).sort((x,y)=>y.ts-x.ts); }
+async function photoGet(id){ return (await idb("readonly", s => s.get(id))) || mem.get(id); }
+async function photoDel(id){ mem.delete(id); await idb("readwrite", s => s.delete(id)); }
+
+/* ---------- small helpers ---------- */
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let toastT;
+function toast(m, ms=3200){ const t=$("#toast"); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true, ms); }
+function ago(ts){ const s=(Date.now()-ts)/1000; if(s<60) return "just now"; if(s<3600) return Math.round(s/60)+" min ago"; if(s<86400) return Math.round(s/3600)+" h ago"; return Math.round(s/86400)+" days ago"; }
+function fmtTime(ts){ try { return new Date(ts).toLocaleString([], {weekday:"short", day:"numeric", month:"short", hour:"numeric", minute:"2-digit"}); } catch(e){ return new Date(ts).toString(); } }
+const blobToB64 = b => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]); r.onerror=rej; r.readAsDataURL(b); });
+const blobToURL = b => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(b); });
+function loadImg(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+async function shrink(fileOrBlob, max=1024, q=.82){
+  const url = URL.createObjectURL(fileOrBlob);
+  try {
+    const img = await loadImg(url);
+    const k = Math.min(1, max/Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement("canvas"); c.width=Math.round(img.naturalWidth*k); c.height=Math.round(img.naturalHeight*k);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    return await new Promise(r=>c.toBlob(r,"image/jpeg",q));
+  } finally { URL.revokeObjectURL(url); }
+}
+function parseJSON(t){
+  if (typeof t !== "string") return t;
+  let s = t.trim().replace(/^```(?:json)?\s*/i,"").replace(/```\s*$/,"");
+  try { return JSON.parse(s); } catch(e){}
+  const a = s.indexOf("{"), b = s.lastIndexOf("}");
+  if (a>=0 && b>a) { try { return JSON.parse(s.slice(a,b+1)); } catch(e){} }
+  return null;
+}
+
+/* ---------- theme ---------- */
+function applyTheme(){
+  const t = S.settings.theme;
+  if (t === "system") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", t);
+  document.querySelectorAll("#themeChips .chip").forEach(c => c.setAttribute("aria-pressed", String(c.dataset.t===t)));
+}
+
+/* ---------- AI layer ---------- */
+let samplePromise = null;
+function getSample(){
+  if (!samplePromise) samplePromise = (window.claude && typeof window.claude.use === "function") ? window.claude.use("sample").catch(()=>null) : Promise.resolve(null);
+  return samplePromise;
+}
+let geminiBlocked = false;   // true when this page can't reach Google (e.g. inside the Claude preview)
+let aiState = "none";
+
+async function refreshAIState(){
+  const sample = await getSample();
+  if (S.settings.key && !geminiBlocked) aiState = "gemini";
+  else if (sample) aiState = "claude";
+  else aiState = "none";
+  const dot=$("#aiDot"), lab=$("#aiLabel");
+  dot.className = "dot " + (aiState==="gemini"?"ok":aiState==="claude"?"warn":"bad");
+  lab.textContent = aiState==="gemini" ? "Gemini" : aiState==="claude" ? "Preview AI" : "AI not set";
+  $("#aiPill").title = aiState==="gemini" ? "Answers come from Gemini with your key" : aiState==="claude" ? "Gemini can't be reached in this preview, so Claude answers. Voice and audio features need the Gemini version." : "Add your Gemini key in Settings";
+}
+
+function modelChain(m){ return [...new Set([m, "gemini-flash-latest", "gemini-2.5-flash"].filter(Boolean))]; }
+
+async function geminiCall(model, body){
+  let r;
+  try {
+    r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent", {
+      method:"POST", headers:{"Content-Type":"application/json","x-goog-api-key":S.settings.key}, body:JSON.stringify(body)
+    });
+  } catch(e) {
+    const err = new Error("NETWORK"); err.network = true; throw err;
+  }
+  const j = await r.json().catch(()=>({}));
+  if (!r.ok) { const err = new Error(j.error?.message || ("Gemini error "+r.status)); err.status = r.status; throw err; }
+  return j;
+}
+
+async function geminiText({system, parts, search=false, json=true}){
+  const body = {
+    contents:[{role:"user", parts: parts.map(p => p.text!==undefined ? {text:p.text} : {inline_data:{mime_type:p.mime, data:p.b64}})}],
+    generationConfig:{temperature:0.4}
+  };
+  if (system) body.systemInstruction = {parts:[{text:system}]};
+  if (search) body.tools = [{google_search:{}}];
+  else if (json) body.generationConfig.responseMimeType = "application/json";
+  let last;
+  for (const m of modelChain(S.settings.model)) {
+    try {
+      const j = await geminiCall(m, body);
+      const text = (j.candidates?.[0]?.content?.parts || []).map(p=>p.text||"").join("").trim();
+      if (!text) throw new Error(j.promptFeedback?.blockReason ? "Gemini blocked this request ("+j.promptFeedback.blockReason+")." : "Gemini returned an empty answer. Try again.");
+      return text;
+    } catch(e) {
+      last = e;
+      if (e.network) throw e;
+      if (search && e.status === 400) { return geminiText({system, parts, search:false, json}); }
+      if (e.status === 404 || /not found|not supported/i.test(e.message)) continue;
+      throw e;
+    }
+  }
+  throw last;
+}
+
+/* ask(): one function every feature uses. Returns parsed JSON (json=true) or text. */
+async function ask({system="", parts, json=true, search=false, tier="default"}){
+  if (S.settings.key && !geminiBlocked) {
+    try {
+      const t = await geminiText({system, parts, search, json});
+      return json ? (parseJSON(t) ?? {reply:t}) : t;
+    } catch(e) {
+      if (!e.network) throw e;
+      geminiBlocked = true; await refreshAIState();
+      const sample = await getSample();
+      if (!sample) throw new Error("Can't reach Gemini. Check your internet connection and try again.");
+      toast("Gemini can't be reached from this preview. Using Claude here instead.", 5000);
+    }
+  }
+  const sample = await getSample();
+  if (!sample) throw new Error("Add your Gemini API key in Settings to use Muru's AI.");
+  if (parts.some(p => p.mime && p.mime.startsWith("audio/"))) {
+    const e = new Error("Voice needs the Gemini version of Muru. Type instead, or open the hosted app with your key."); e.code="NEEDS_GEMINI"; throw e;
+  }
+  const images = parts.filter(p => p.blob).map(p => p.blob);
+  const text = (system ? system + "\n\n" : "") + parts.filter(p=>p.text!==undefined).map(p=>p.text).join("\n\n") + (json ? "\n\nReply with only the JSON object." : "");
+  try {
+    const r = await sample(text, {images: images.length ? images : undefined, modelTier: tier, cache:false});
+    return json ? (parseJSON(r.text) ?? {reply:r.text}) : r.text;
+  } catch(e) {
+    const map = {not_granted:"You didn't allow this page to use Claude.", rate_limited:"Too many requests. Wait a little and try again.", images_unavailable:"Photos can't be sent from this view.", sampling_disabled:"AI isn't available for this account."};
+    throw new Error(map[e.code] || e.message || "The AI request failed. Try again.");
+  }
+}
+
+/* ---------- audio: recording + speaking ---------- */
+let actx;
+function ctx(){ if(!actx){ const C = window.AudioContext||window.webkitAudioContext; actx = C ? new C() : null; } return actx; }
+// unlock audio on first touch so later voice replies are allowed to play (fixes "voice plays once, then stops" on iPhone)
+document.addEventListener("pointerdown", () => { const c=ctx(); if(c && c.state==="suspended") c.resume(); }, {passive:true});
+
+async function toWav(blob, rate=16000){
+  const c = ctx(); if(!c) throw new Error("This browser can't process audio.");
+  const buf = await blob.arrayBuffer();
+  const audio = await new Promise((res,rej)=>{ try { const p = c.decodeAudioData(buf.slice(0), res, rej); if(p&&p.then) p.then(res,rej); } catch(e){ rej(e); } });
+  const len = Math.max(1, Math.ceil(audio.duration*rate));
+  const OC = window.OfflineAudioContext||window.webkitOfflineAudioContext;
+  const off = new OC(1, len, rate);
+  const src = off.createBufferSource(); src.buffer = audio; src.connect(off.destination); src.start();
+  const out = await off.startRendering();
+  const d = out.getChannelData(0);
+  const ab = new ArrayBuffer(44 + d.length*2), v = new DataView(ab);
+  const w = (o,s)=>{ for(let i=0;i<s.length;i++) v.setUint8(o+i,s.charCodeAt(i)); };
+  w(0,"RIFF"); v.setUint32(4,36+d.length*2,true); w(8,"WAVE"); w(12,"fmt "); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,rate,true); v.setUint32(28,rate*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,"data"); v.setUint32(40,d.length*2,true);
+  for (let i=0;i<d.length;i++){ const s=Math.max(-1,Math.min(1,d[i])); v.setInt16(44+i*2, s<0?s*0x8000:s*0x7FFF, true); }
+  return new Blob([ab], {type:"audio/wav"});
+}
+
+/* Recorder: tap to start, tap to stop. */
+class Rec {
+  constructor(maxSec, onTick){ this.maxSec=maxSec; this.onTick=onTick; this.on=false; }
+  async start(){
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("NO_MIC");
+    try { this.stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true}}); }
+    catch(e){ throw new Error("NO_MIC"); }
+    const types = ["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg"];
+    const type = window.MediaRecorder && types.find(t => MediaRecorder.isTypeSupported?.(t));
+    this.mr = new MediaRecorder(this.stream, type ? {mimeType:type} : undefined);
+    this.chunks = []; this.mr.ondataavailable = e => e.data.size && this.chunks.push(e.data);
+    this.done = new Promise(res => this.mr.onstop = () => res(new Blob(this.chunks, {type:this.mr.mimeType||"audio/webm"})));
+    this.mr.start(500); this.on = true; this.t0 = Date.now();
+    this.iv = setInterval(()=>{ const s=(Date.now()-this.t0)/1000; this.onTick?.(s); if(s>=this.maxSec) this.stop(); }, 250);
+  }
+  async stop(){
+    if(!this.on) return null; this.on=false; clearInterval(this.iv);
+    this.mr.stop(); this.stream.getTracks().forEach(t=>t.stop());
+    return this.done;
+  }
+}
+function micErr(e){
+  if (e.message === "NO_MIC") toast("Microphone isn't available here. Allow mic access, or type instead.", 5000);
+  else toast(e.message || "Recording failed.");
+}
+const mmss = s => { s=Math.floor(s); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); };
+
+async function audioPart(blob, rate=16000){
+  const wav = await toWav(blob, rate);
+  return {mime:"audio/wav", b64: await blobToB64(wav)};
+}
+
+let currentSrc = null;
+function stopSpeaking(){ try{ currentSrc?.stop(); }catch(e){} currentSrc=null; try{ speechSynthesis.cancel(); }catch(e){} }
+async function speak(text, langCode){
+  if (!text || S.settings.voice === "off") return;
+  stopSpeaking();
+  const lang = L(langCode || "en");
+  if (S.settings.voice === "gemini" && S.settings.key && !geminiBlocked) {
+    try {
+      const body = {contents:[{parts:[{text}]}], generationConfig:{responseModalities:["AUDIO"], speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:"Kore"}}}}};
+      let j, last;
+      for (const m of [...new Set([S.settings.tts, "gemini-2.5-flash-preview-tts"])]) {
+        try { j = await geminiCall(m, body); break; } catch(e){ last=e; if(e.network) throw e; if(e.status===404) continue; throw e; }
+      }
+      if (!j) throw last;
+      const part = (j.candidates?.[0]?.content?.parts||[]).find(p=>p.inlineData||p.inline_data);
+      const inl = part?.inlineData || part?.inline_data;
+      if (!inl?.data) throw new Error("no audio");
+      const rate = +(/rate=(\d+)/.exec(inl.mimeType||inl.mime_type||"")?.[1] || 24000);
+      const bin = atob(inl.data); const n = bin.length>>1;
+      const c = ctx(); if (c.state==="suspended") await c.resume();
+      const buf = c.createBuffer(1, n, rate); const ch = buf.getChannelData(0);
+      for (let i=0;i<n;i++){ let s = bin.charCodeAt(i*2) | (bin.charCodeAt(i*2+1)<<8); if(s>=32768) s-=65536; ch[i]=s/32768; }
+      const src = c.createBufferSource(); src.buffer=buf; src.playbackRate.value = S.settings.rate; src.connect(c.destination); src.start(); currentSrc = src;
+      return;
+    } catch(e) { /* fall through to phone voice */ }
+  }
+  try {
+    if (!("speechSynthesis" in window)) return;
+    const u = new SpeechSynthesisUtterance(text); u.lang = lang.t; u.rate = S.settings.rate;
+    const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith(lang.c));
+    if (v) u.voice = v; else if (lang.c !== "en") toast("This phone has no "+lang.n+" voice. Showing text instead.", 3500);
+    speechSynthesis.speak(u);
+  } catch(e){}
+}
+try { speechSynthesis?.getVoices(); speechSynthesis.onvoiceschanged = ()=>{}; } catch(e){}
+
+/* ---------- navigation ---------- */
+function go(v){
+  document.querySelectorAll(".view[id^='v-']").forEach(s => s.hidden = s.id !== "v-"+v);
+  document.querySelectorAll(".dock button").forEach(b => { if(b.dataset.v===v) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  window.scrollTo(0,0);
+  if (v==="memory") renderMemory();
+}
+document.querySelectorAll(".dock button").forEach(b => b.onclick = () => go(b.dataset.v));
+
+/* ================= ASSIST ================= */
+function assistSystem(){
+  const now = new Date();
+  const items = S.items.slice(0,20).map(i => `- ${i.name}: ${i.where||"no place noted"} (saved ${ago(i.ts)})`).join("\n") || "none";
+  const notes = S.notes.slice(0,15).map(n => `- ${n.text.slice(0,160)}`).join("\n") || "none";
+  const rems = S.reminders.filter(r=>!r.done).slice(0,10).map(r => `- ${r.text} at ${new Date(r.when).toLocaleString()}`).join("\n") || "none";
+  return `You are Muru, the voice assistant inside Muru Vision, a screenless AI companion. Be warm, brief and practical: 1 to 3 short sentences, because answers are read aloud. Reply in the language the user used (Kannada, Hindi, Telugu or English).
+User name: ${S.settings.name || "unknown"}. Current local time: ${now.toString()}.
+Their kept items:\n${items}
+Their notes:\n${notes}
+Their upcoming reminders:\n${rems}
+Reply ONLY with JSON: {"reply": string, "lang": "kn"|"hi"|"te"|"en", "actions": [ ... ]}
+Possible actions (use only when clearly asked):
+{"type":"add_note","text":string}
+{"type":"add_reminder","text":string,"when":"ISO 8601 local datetime like 2026-10-21T20:00"}
+{"type":"open","screen":"translate"|"see"|"memory"|"sos"}
+{"type":"sos"}  (only if the user says they are in danger or asks for SOS)
+{"type":"maps","query":string}  (for places, directions, nearest hospital etc.)
+For "where is my X" questions, answer from the kept items. If a request needs live data you don't have, say so briefly.`;
+}
+function renderChat(){
+  const c = $("#chat"); c.innerHTML = "";
+  for (const m of S.chat.slice(-30)) {
+    const d = document.createElement("div"); d.className = "msg " + (m.role==="user"?"me":"ai");
+    d.textContent = m.text;
+    if (m.acts) { const a=document.createElement("span"); a.className="act"; a.textContent=m.acts; d.append(a); }
+    c.append(d);
+  }
+  $("#assistSugg").hidden = S.chat.length > 0;
+}
+let geo = null;
+function getLoc(timeout=8000){
+  return new Promise(res => {
+    if (!navigator.geolocation) return res(null);
+    let done=false; const t=setTimeout(()=>{ if(!done){done=true;res(geo);} }, timeout);
+    try {
+      navigator.geolocation.getCurrentPosition(p => { if(done) return; done=true; clearTimeout(t); geo={lat:p.coords.latitude, lng:p.coords.longitude, acc:p.coords.accuracy, ts:Date.now()}; res(geo); },
+        () => { if(done) return; done=true; clearTimeout(t); res(geo); }, {enableHighAccuracy:true, timeout, maximumAge:60000});
+    } catch(e){ done=true; clearTimeout(t); res(geo); }
+  });
+}
+async function runActions(actions){
+  const done = [];
+  for (const a of (Array.isArray(actions)?actions:[])) {
+    if (a.type==="add_note" && a.text) { S.notes.unshift({id:uid(), text:String(a.text), ts:Date.now()}); done.push("Note saved"); }
+    else if (a.type==="add_reminder" && a.text) {
+      const when = Date.parse(a.when); if (!isNaN(when)) { S.reminders.push({id:uid(), text:String(a.text), when, done:false}); S.reminders.sort((x,y)=>x.when-y.when); done.push("Reminder set for "+fmtTime(when)); askNotify(); }
+    }
+    else if (a.type==="open" && ["translate","see","memory","sos"].includes(a.screen)) { setTimeout(()=>go(a.screen), 900); done.push("Opening "+a.screen); }
+    else if (a.type==="sos") { go("sos"); startSOS(); done.push("Emergency mode on"); }
+    else if (a.type==="maps" && a.query) {
+      const loc = await getLoc(5000);
+      const url = "https://www.google.com/maps/search/"+encodeURIComponent(a.query)+(loc?"/@"+loc.lat+","+loc.lng+",15z":"");
+      done.push("MAPS:"+url);
+    }
+  }
+  save(); return done;
+}
+let assistBusy = false;
+async function assistSend({text, audio}){
+  if (assistBusy) return; assistBusy = true;
+  const orb = $("#assistOrb"); orb.classList.add("busy"); $("#assistHint").textContent = "Thinking…";
+  S.chat.push({role:"user", text: text || "🎙 (voice message)"}); renderChat();
+  try {
+    const hist = S.chat.slice(-9,-1).map(m => (m.role==="user"?"User: ":"Muru: ")+m.text).join("\n");
+    const parts = [{text: (hist? "Recent conversation:\n"+hist+"\n\n" : "") + (audio ? "The user just said this (audio attached). Understand it and respond." : "User: "+text)}];
+    if (audio) parts.push(audio);
+    const r = await ask({system: assistSystem(), parts, json:true, tier:"quick"});
+    const reply = String(r.reply || r.text || "Sorry, I didn't get that.");
+    const acts = await runActions(r.actions);
+    const maps = acts.find(a=>a.startsWith("MAPS:"));
+    const shown = acts.filter(a=>!a.startsWith("MAPS:"));
+    S.chat.push({role:"ai", text:reply, acts: shown.join(" · ") || ""});
+    if (S.chat.length > 60) S.chat = S.chat.slice(-60);
+    save(); renderChat();
+    if (maps) {
+      const a = document.createElement("a"); a.href = maps.slice(5); a.target="_blank"; a.rel="noopener"; a.className="btn sm primary"; a.textContent="Open in Google Maps"; a.style.alignSelf="flex-start";
+      $("#chat").append(a);
+    }
+    speak(reply, r.lang);
+  } catch(e) {
+    S.chat.push({role:"ai", text: e.message}); renderChat();
+  } finally {
+    assistBusy = false; orb.classList.remove("busy"); $("#assistHint").textContent = "Tap the lens and speak. Tap again to send.";
+    window.scrollTo({top: document.body.scrollHeight, behavior:"smooth"});
+  }
+}
+let aRec = null;
+$("#assistOrb").onclick = async () => {
+  if (assistBusy) return;
+  const orb = $("#assistOrb");
+  if (aRec && aRec.on) {
+    orb.classList.remove("rec"); const blob = await aRec.stop(); aRec = null;
+    try { const p = await audioPart(blob); await assistSend({audio:p}); } catch(e){ toast(e.message || "Couldn't read that recording."); }
+    return;
+  }
+  stopSpeaking();
+  aRec = new Rec(60, s => $("#assistHint").textContent = "Listening… " + mmss(s) + " · tap to send");
+  try { await aRec.start(); orb.classList.add("rec"); }
+  catch(e){ aRec=null; micErr(e); $("#assistInput").focus(); }
+};
+$("#assistForm").onsubmit = e => { e.preventDefault(); const t=$("#assistInput").value.trim(); if(!t) return; $("#assistInput").value=""; assistSend({text:t}); };
+document.querySelectorAll("#assistSugg .chip").forEach(c => c.onclick = () => assistSend({text:c.dataset.q}));
+$("#clearChat").onclick = () => { S.chat=[]; save(); renderChat(); };
+
+/* ================= TRANSLATE ================= */
+function fillLangs(){
+  for (const id of ["myLang","theirLang"]) {
+    const s = $("#"+id); s.innerHTML = LANGS.map(l=>`<option value="${l.c}">${l.n}</option>`).join("");
+  }
+  $("#myLang").value = S.settings.myLang; $("#theirLang").value = S.settings.theirLang;
+  updLangLabels();
+}
+function updLangLabels(){
+  const a=L(S.settings.myLang).n, b=L(S.settings.theirLang).n;
+  $("#spkMeS").textContent = a+" → "+b; $("#spkThemS").textContent = b+" → "+a;
+}
+$("#myLang").onchange = e => { S.settings.myLang=e.target.value; save(); updLangLabels(); };
+$("#theirLang").onchange = e => { S.settings.theirLang=e.target.value; save(); updLangLabels(); };
+$("#swapLang").onclick = () => { [S.settings.myLang,S.settings.theirLang]=[S.settings.theirLang,S.settings.myLang]; save(); fillLangs(); };
+
+function trPrompt(mode){
+  const my=L(S.settings.myLang), th=L(S.settings.theirLang);
+  const rule = mode==="me" ? `The speaker speaks ${my.n}. Translate into ${th.n}.`
+    : mode==="them" ? `The speaker speaks ${th.n}. Translate into ${my.n}.`
+    : `Detect the spoken language. If it is ${my.n}, translate into ${th.n}. Otherwise translate into ${my.n}.`;
+  return `You are a live interpreter for Indian travellers. ${rule}
+Keep the meaning, tone and politeness natural for a real conversation (shops, temples, bus stands, prices, bargaining). Numbers and prices must be exact.
+Write the translation in the target language's own script. Also give a romanized (Latin letters) pronunciation of the translation so the user can say it.
+Reply ONLY with JSON: {"detected":"kn"|"hi"|"en"|"te"|"other","original": "what was said, in its own script","target":"kn"|"hi"|"en"|"te","translation": string,"romanized": string}`;
+}
+let trBusy=false, trRec=null, trMode=null;
+async function translate({text, audio, mode}){
+  trBusy = true; $("#trHint").textContent = "Translating…";
+  try {
+    const parts = audio ? [{text:"Translate the attached speech."}, audio] : [{text:"Text to translate:\n"+text}];
+    const r = await ask({system: trPrompt(mode), parts, json:true, tier:"quick"});
+    if (!r.translation) throw new Error("No translation came back. Try again, a little slower and closer to the phone.");
+    const entry = {id:uid(), ts:Date.now(), from:r.detected||"", to:r.target || (mode==="them"?S.settings.myLang:S.settings.theirLang), original:r.original||text||"", translation:r.translation, romanized:r.romanized||""};
+    S.trHist.unshift(entry); S.trHist = S.trHist.slice(0,40); save();
+    showTr(entry); renderTrHist();
+    speak(entry.translation, entry.to);
+  } catch(e){ $("#trResult").innerHTML = `<div class="notice">${esc(e.message)}</div>`; }
+  finally { trBusy=false; $("#trHint").textContent = "Tap a button, speak, then tap again."; }
+}
+function showTr(e){
+  $("#trResult").innerHTML = `<div class="result">
+    <span class="tag">${esc(L(e.from).n||"Detected")} → ${esc(L(e.to).n)}</span>
+    <div class="from">${esc(e.original)}</div>
+    <div class="to">${esc(e.translation)}</div>
+    ${e.romanized?`<div class="roman">Say it: ${esc(e.romanized)}</div>`:""}
+    <div class="row"><button class="btn sm" data-a="play">Play again</button><button class="btn sm primary" data-a="show">Show to them</button></div></div>`;
+  $("#trResult [data-a=play]").onclick = () => speak(e.translation, e.to);
+  $("#trResult [data-a=show]").onclick = () => showBig(e.translation, e.to);
+}
+function renderTrHist(){
+  const h=$("#trHist");
+  if (!S.trHist.length) { h.innerHTML = `<div class="empty">Your translations will appear here.</div>`; return; }
+  h.innerHTML = S.trHist.slice(0,12).map(e => `<div class="hitem"><div class="t"><div class="small muted">${esc(e.original)}</div><div style="font-weight:600">${esc(e.translation)}</div></div><button class="btn sm" data-id="${e.id}" aria-label="Play">▶</button></div>`).join("");
+  h.querySelectorAll("button[data-id]").forEach(b => b.onclick = () => { const e=S.trHist.find(x=>x.id===b.dataset.id); if(e){ showTr(e); speak(e.translation,e.to); } });
+}
+$("#trClear").onclick = () => { S.trHist=[]; save(); renderTrHist(); };
+async function trTap(mode, btn){
+  if (trBusy) return;
+  if (trRec && trRec.on) {
+    document.querySelectorAll(".speakbtn,#spkAuto").forEach(b=>b.classList.remove("rec"));
+    const blob = await trRec.stop(); const m=trMode; trRec=null;
+    try { const p = await audioPart(blob); await translate({audio:p, mode:m}); } catch(e){ toast(e.message || "Couldn't read that recording."); }
+    return;
+  }
+  stopSpeaking();
+  trMode = mode;
+  trRec = new Rec(45, s => $("#trHint").textContent = "Listening… "+mmss(s)+" · tap again when done");
+  try { await trRec.start(); btn.classList.add("rec"); }
+  catch(e){ trRec=null; micErr(e); $("#trInput").focus(); }
+}
+$("#spkMe").onclick = e => trTap("me", e.currentTarget);
+$("#spkThem").onclick = e => trTap("them", e.currentTarget);
+$("#spkAuto").onclick = e => trTap("auto", e.currentTarget);
+$("#trForm").onsubmit = e => { e.preventDefault(); const t=$("#trInput").value.trim(); if(!t||trBusy) return; translate({text:t, mode:"auto"}); };
+
+function showBig(text, lang){ $("#bigText").textContent=text; $("#bigLang").textContent=L(lang).n; $("#big").hidden=false; $("#bigSpeak").onclick=()=>speak(text,lang); }
+$("#bigClose").onclick = () => $("#big").hidden = true;
+
+/* ================= SEE ================= */
+let seeBlob = null, seeMode = "describe", seeAnswer = "";
+async function pickImage(file){
+  if (!file) return;
+  try {
+    seeBlob = await shrink(file, 1280);
+    const url = URL.createObjectURL(seeBlob);
+    $("#seePrev").innerHTML = `<img alt="Your photo" src="${url}">`;
+    runSee();
+  } catch(e){ toast("Couldn't open that photo."); }
+}
+$("#camIn").onchange = e => { pickImage(e.target.files[0]); e.target.value=""; };
+$("#galIn").onchange = e => { pickImage(e.target.files[0]); e.target.value=""; };
+document.querySelectorAll("#seeModes .chip").forEach(c => c.onclick = () => {
+  seeMode = c.dataset.m; document.querySelectorAll("#seeModes .chip").forEach(x=>x.setAttribute("aria-pressed", String(x===c)));
+  if (seeBlob) runSee();
+});
+const SEE_PROMPTS = {
+  describe: "Say what this is and anything useful about it, in 2-4 short sentences.",
+  read: "Read out all the text in the image exactly, keeping its language and script. Then one line saying what it is (sign, menu, label…).",
+  translate: () => `Read the text in the image and translate it into ${L(S.settings.myLang).n}. Show the translation first, then the original.`,
+  product: "Identify the product (brand, model if visible). Explain the key features to check, typical price range in India if you know it (say clearly it may be out of date), and 2-3 questions to ask the shopkeeper. Be practical.",
+  safety: "Look for anything that could be unsafe (expiry dates, allergens, damage, hazards, scams). Say clearly what you can and cannot tell from a photo."
+};
+$("#seeForm").onsubmit = e => { e.preventDefault(); if(!seeBlob){ toast("Take or choose a photo first."); return; } runSee($("#seeQ").value.trim()); };
+let seeBusy = false;
+async function runSee(q){
+  if (!seeBlob || seeBusy) return;
+  seeBusy = true; $("#seeOut").hidden=false; $("#seeAns").textContent = "Looking…"; $("#seeAsk").disabled = true;
+  try {
+    const p = SEE_PROMPTS[seeMode]; const instr = q || (typeof p==="function"?p():p);
+    const b64 = await blobToB64(seeBlob);
+    const lang = L(S.settings.myLang).n;
+    const r = await ask({system:`You are Muru's camera assistant. Answer in simple ${q?"language matching the question":"English"}. Never invent details you can't see. If the user's language is ${lang}, keep any translation in ${lang} script.`, parts:[{text:instr}, {mime:"image/jpeg", b64, blob:seeBlob}], json:false});
+    seeAnswer = String(r).trim(); $("#seeAns").textContent = seeAnswer;
+    speak(seeAnswer, "en");
+  } catch(e){ $("#seeAns").textContent = e.message; }
+  finally { seeBusy=false; $("#seeAsk").disabled=false; }
+}
+$("#seeSpeak").onclick = () => speak(seeAnswer, "en");
+$("#seeSave").onclick = async () => { if(!seeBlob) return; await photoPut({id:uid(), ts:Date.now(), blob:seeBlob, label: seeAnswer.slice(0,120)}); toast("Saved to Memory › Photos"); };
+$("#seeKeep").onclick = () => { go("memory"); memTab("eye"); toast("Name the item, then tap Snap and save."); };
+
+/* live look */
+let live = {on:false, stream:null, iv:null, frames:[]};
+$("#liveBtn").onclick = async () => {
+  if (live.on) { stopLive(); return; }
+  try {
+    live.stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}, audio:false});
+  } catch(e){ toast("Camera isn't available here. Allow camera access in the hosted app.", 5000); return; }
+  const v = $("#liveVid"); v.srcObject = live.stream; await v.play().catch(()=>{});
+  $("#livePrev").hidden = false; live.on = true; $("#liveBtn").textContent = "Stop"; $("#liveAsk").disabled = false;
+  const snap = () => {
+    if (!v.videoWidth) return;
+    const k = 512/Math.max(v.videoWidth, v.videoHeight); const c=document.createElement("canvas"); c.width=v.videoWidth*k; c.height=v.videoHeight*k;
+    c.getContext("2d").drawImage(v,0,0,c.width,c.height);
+    c.toBlob(b => { if(!b) return; live.frames.push({ts:Date.now(), blob:b}); if(live.frames.length>30) live.frames.shift(); $("#liveCount").textContent = live.frames.length+" snapshots · last "+new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}); }, "image/jpeg", .7);
+  };
+  setTimeout(snap, 1200); live.iv = setInterval(snap, 20000);
+  try { live.wake = await navigator.wakeLock?.request("screen"); } catch(e){}
+};
+function stopLive(){
+  live.on=false; clearInterval(live.iv); live.stream?.getTracks().forEach(t=>t.stop()); live.stream=null;
+  $("#livePrev").hidden = true; $("#liveBtn").textContent = "Start"; try{ live.wake?.release(); }catch(e){}
+}
+$("#liveAsk").onclick = async () => {
+  if (!live.frames.length) { toast("No snapshots yet. Wait a few seconds."); return; }
+  $("#liveAns").textContent = "Summarizing…";
+  try {
+    const pick = live.frames.length<=8 ? live.frames : live.frames.filter((_,i)=> i % Math.ceil(live.frames.length/8)===0 ).slice(-8);
+    const parts = [{text:"These are snapshots from the user's camera, oldest first, taken at: "+pick.map(f=>new Date(f.ts).toLocaleTimeString()).join(", ")+". Summarize what happened in 3-5 short bullet points. Mention times. Don't guess beyond what is visible."}];
+    for (const f of pick) parts.push({mime:"image/jpeg", b64: await blobToB64(f.blob), blob:f.blob});
+    const r = await ask({parts, json:false});
+    $("#liveAns").textContent = String(r).trim();
+  } catch(e){ $("#liveAns").textContent = e.message; }
+};
+
+/* ================= MEMORY ================= */
+let memCur = "notes";
+function memTab(p){
+  memCur = p;
+  document.querySelectorAll("#memSeg button").forEach(b=>b.setAttribute("aria-selected", String(b.dataset.p===p)));
+  for (const k of ["notes","rem","eye","photos","meet"]) $("#p-"+k).hidden = k!==p;
+  renderMemory();
+}
+document.querySelectorAll("#memSeg button").forEach(b => b.onclick = () => memTab(b.dataset.p));
+function renderMemory(){
+  if (memCur==="notes") renderNotes();
+  if (memCur==="rem") renderRem();
+  if (memCur==="eye") renderEye();
+  if (memCur==="photos") renderPhotos();
+  if (memCur==="meet") renderMeet();
+}
+/* notes */
+function renderNotes(){
+  const q = $("#noteSearch").value.trim().toLowerCase();
+  const list = S.notes.filter(n => !q || n.text.toLowerCase().includes(q));
+  $("#noteList").innerHTML = list.length ? list.map(n => `<div class="li"><div class="body"><div>${esc(n.text)}</div><div class="meta">${fmtTime(n.ts)}</div></div><button class="btn sm" data-r="${n.id}" aria-label="Read aloud">▶</button><button class="btn sm ghost" data-d="${n.id}" aria-label="Delete">✕</button></div>`).join("")
+    : `<div class="empty">${q?"No notes match.":"No notes yet. Try saying: “Save this idea: …” on the Assist screen."}</div>`;
+  $("#noteList").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{ const n=S.notes.find(x=>x.id===b.dataset.r); n&&speak(n.text); });
+  $("#noteList").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ S.notes=S.notes.filter(x=>x.id!==b.dataset.d); save(); renderNotes(); });
+}
+$("#noteSearch").oninput = renderNotes;
+$("#noteAdd").onclick = () => { const t=$("#noteIn").value.trim(); if(!t) return; S.notes.unshift({id:uid(), text:t, ts:Date.now()}); $("#noteIn").value=""; save(); renderNotes(); toast("Note saved"); };
+let nRec=null;
+$("#noteMic").onclick = async () => {
+  if (nRec && nRec.on) {
+    const blob = await nRec.stop(); nRec=null; $("#noteMicL").textContent="Writing…";
+    try {
+      const p = await audioPart(blob);
+      const r = await ask({system:"Transcribe the speech exactly in its own language and script. Remove filler words like 'umm'. Reply ONLY JSON {\"text\": string}.", parts:[{text:"Transcribe this."}, p], json:true, tier:"quick"});
+      $("#noteIn").value = ($("#noteIn").value ? $("#noteIn").value+"\n" : "") + (r.text||r.reply||"");
+    } catch(e){ toast(e.message); }
+    $("#noteMicL").textContent="Speak"; return;
+  }
+  nRec = new Rec(120, s => $("#noteMicL").textContent = "Stop "+mmss(s));
+  try { await nRec.start(); } catch(e){ nRec=null; micErr(e); }
+};
+/* reminders */
+function renderRem(){
+  const list = S.reminders;
+  $("#remList").innerHTML = list.length ? list.map(r => `<div class="li"><div class="body"><div style="${r.done?"text-decoration:line-through;color:var(--muted)":""}">${esc(r.text)}</div><div class="meta">${fmtTime(r.when)}${!r.done && r.when<Date.now()?" · missed":""}</div></div><button class="btn sm ghost" data-d="${r.id}" aria-label="Delete">✕</button></div>`).join("")
+    : `<div class="empty">No reminders. You can also say “Remind me to call Amma at 6 PM”.</div>`;
+  $("#remList").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ S.reminders=S.reminders.filter(x=>x.id!==b.dataset.d); save(); renderRem(); });
+}
+function askNotify(){ try { if (window.Notification && Notification.permission==="default") Notification.requestPermission(); } catch(e){} }
+$("#remAdd").onclick = () => {
+  const t=$("#remText").value.trim(), w=Date.parse($("#remWhen").value);
+  if(!t||isNaN(w)) { toast("Add what and when."); return; }
+  S.reminders.push({id:uid(), text:t, when:w, done:false}); S.reminders.sort((a,b)=>a.when-b.when); save();
+  $("#remText").value=""; renderRem(); toast("Reminder set for "+fmtTime(w)); askNotify();
+};
+setInterval(() => {
+  const now = Date.now(); let fired=false;
+  for (const r of S.reminders) if (!r.done && r.when<=now && now-r.when < 6*3600e3) {
+    r.done = true; fired = true;
+    toast("⏰ "+r.text, 8000); speak("Reminder: "+r.text);
+    try { navigator.vibrate?.([300,150,300]); } catch(e){}
+    try { if (window.Notification && Notification.permission==="granted") new Notification("Muru reminder", {body:r.text}); } catch(e){}
+  }
+  if (fired) { save(); if(memCur==="rem") renderRem(); }
+}, 15000);
+/* keep an eye */
+async function renderEye(){
+  const list = S.items;
+  if (!list.length) { $("#eyeList").innerHTML = `<div class="empty">Nothing saved yet.</div>`; return; }
+  const rows = await Promise.all(list.map(async it => {
+    let img = "";
+    if (it.photo) { const p = await photoGet(it.photo); if (p) img = `<img class="thumb" alt="" src="${URL.createObjectURL(p.blob)}">`; }
+    return `<div class="li">${img || `<div class="thumb"></div>`}<div class="body"><div style="font-weight:700">${esc(it.name)}</div><div>${esc(it.where||"")}</div><div class="meta">Last seen ${ago(it.ts)}</div></div><button class="btn sm ghost" data-d="${it.id}" aria-label="Delete">✕</button></div>`;
+  }));
+  $("#eyeList").innerHTML = rows.join("");
+  $("#eyeList").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ const it=S.items.find(x=>x.id===b.dataset.d); if(it?.photo) photoDel(it.photo); S.items=S.items.filter(x=>x.id!==b.dataset.d); save(); renderEye(); });
+}
+function eyeSave(where, photoId){
+  const name = $("#eyeName").value.trim() || "Item";
+  const ex = S.items.find(i => i.name.toLowerCase()===name.toLowerCase());
+  if (ex) { if (ex.photo && photoId) photoDel(ex.photo); Object.assign(ex, {where, ts:Date.now(), photo:photoId||ex.photo}); }
+  else S.items.unshift({id:uid(), name, where, ts:Date.now(), photo:photoId||null});
+  save(); $("#eyeName").value=""; $("#eyeWhere").value=""; renderEye(); toast("Saved: "+name);
+}
+$("#eyeNoPhoto").onclick = () => { if(!$("#eyeName").value.trim()){ toast("Type the item name."); return; } eyeSave($("#eyeWhere").value.trim(), null); };
+$("#eyeCam").onchange = async e => {
+  const f = e.target.files[0]; e.target.value=""; if(!f) return;
+  const name = $("#eyeName").value.trim() || "Item";
+  toast("Saving "+name+"…");
+  const blob = await shrink(f, 1024); const pid = uid();
+  await photoPut({id:pid, ts:Date.now(), blob, label:"Keep an eye: "+name});
+  let where = $("#eyeWhere").value.trim();
+  if (!where) {
+    try {
+      const r = await ask({parts:[{text:`The user put their "${name}" here. In one short sentence, describe where it is placed so they can find it later (surface, nearby objects, room clues). Reply ONLY JSON {"where": string}`}, {mime:"image/jpeg", b64:await blobToB64(blob), blob}], json:true, tier:"quick"});
+      where = r.where || "";
+    } catch(e){ where = ""; }
+  }
+  eyeSave(where, pid);
+};
+/* photos */
+async function renderPhotos(){
+  const all = await photoAll();
+  $("#photoEmpty").hidden = all.length>0;
+  $("#photoGrid").innerHTML = all.map(p => `<button style="border:none;padding:0;background:none" data-id="${p.id}" aria-label="Open photo"><img alt="${esc(p.label||"Saved photo")}" src="${URL.createObjectURL(p.blob)}"></button>`).join("");
+  $("#photoGrid").querySelectorAll("button").forEach(b => b.onclick = async () => {
+    const p = await photoGet(b.dataset.id); if(!p) return;
+    seeBlob = p.blob; $("#seePrev").innerHTML = `<img alt="" src="${URL.createObjectURL(p.blob)}">`; $("#seeOut").hidden = !p.label; $("#seeAns").textContent = p.label||""; seeAnswer=p.label||"";
+    go("see");
+  });
+}
+/* meetings */
+function renderMeet(){
+  $("#meetList").innerHTML = S.meetings.length ? S.meetings.map(m => `<div class="li"><div class="body"><div style="font-weight:700">${esc(m.title||"Meeting")}</div><div class="meta">${fmtTime(m.ts)} · ${mmss(m.secs||0)}</div><div class="small" style="margin-top:6px;white-space:pre-wrap">${esc(m.summary||"")}</div>${(m.actions||[]).length?`<div class="small" style="margin-top:6px"><b>Action items</b><br>${m.actions.map(a=>"• "+esc(a)).join("<br>")}</div>`:""}</div><button class="btn sm ghost" data-d="${m.id}" aria-label="Delete">✕</button></div>`).join("")
+    : `<div class="empty">No meetings yet.</div>`;
+  $("#meetList").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ S.meetings=S.meetings.filter(x=>x.id!==b.dataset.d); save(); renderMeet(); });
+}
+async function summarizeMeeting(blob, secs){
+  $("#meetHint").textContent = "Writing summary… this can take a minute";
+  $("#meetOrb").classList.add("busy");
+  try {
+    const p = await audioPart(blob, 8000);
+    const r = await ask({system:"You summarize recorded meetings. The audio may mix Kannada, Hindi, Telugu and English. Write in English. Reply ONLY JSON {\"title\": short title, \"summary\": 3-6 sentence summary, \"actions\": [action items with owner if said]}.", parts:[{text:"Summarize this meeting recording."}, p], json:true});
+    S.meetings.unshift({id:uid(), ts:Date.now(), secs, title:r.title, summary:r.summary||r.reply||"", actions:Array.isArray(r.actions)?r.actions.map(String):[]});
+    save(); renderMeet(); toast("Meeting summary saved");
+  } catch(e){ toast(e.message, 5000); }
+  finally { $("#meetOrb").classList.remove("busy"); $("#meetHint").textContent = "Tap to start recording"; }
+}
+let mRec=null;
+$("#meetOrb").onclick = async () => {
+  const orb=$("#meetOrb");
+  if (mRec && mRec.on) { orb.classList.remove("rec"); const secs=(Date.now()-mRec.t0)/1000; const blob=await mRec.stop(); mRec=null; summarizeMeeting(blob, secs); return; }
+  mRec = new Rec(720, s => { $("#meetHint").textContent = "Recording "+mmss(s)+" · tap to stop"; if(s>=720){ orb.classList.remove("rec"); } });
+  try { await mRec.start(); orb.classList.add("rec"); try{ mRec.wake = await navigator.wakeLock?.request("screen"); }catch(e){} }
+  catch(e){ mRec=null; micErr(e); }
+};
+$("#meetFile").onchange = e => { const f=e.target.files[0]; e.target.value=""; if(f) summarizeMeeting(f, 0); };
+
+/* ================= SOS ================= */
+function renderContacts(){
+  $("#ctList").innerHTML = S.contacts.length ? S.contacts.map(c => `<div class="li"><div class="body"><b>${esc(c.name)}</b><div class="meta kbd">${esc(c.phone)}</div></div><button class="btn sm ghost" data-d="${c.id}" aria-label="Remove">✕</button></div>`).join("") : `<div class="empty">Add at least one person you trust.</div>`;
+  $("#ctList").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ S.contacts=S.contacts.filter(x=>x.id!==b.dataset.d); save(); renderContacts(); });
+}
+$("#ctAdd").onclick = () => {
+  const n=$("#ctName").value.trim(), p=$("#ctPhone").value.replace(/[^\d+]/g,"");
+  if(!n||p.length<8){ toast("Add a name and a full phone number."); return; }
+  S.contacts.push({id:uid(), name:n, phone:p}); save(); $("#ctName").value=""; $("#ctPhone").value=""; renderContacts();
+};
+$("#medInfo").oninput = e => { S.medical = e.target.value; save(); };
+async function startSOS(){
+  $("#sosPanel").hidden = false;
+  try { navigator.vibrate?.([200,100,200,100,400]); } catch(e){}
+  $("#sosMsg").textContent = "Getting your location…";
+  const loc = await getLoc(8000);
+  const link = loc ? `https://maps.google.com/?q=${loc.lat.toFixed(6)},${loc.lng.toFixed(6)}` : "";
+  const msg = `EMERGENCY: ${S.settings.name||"I"} need${S.settings.name?"s":""} help now.` + (link?`\nMy location: ${link}`:"\nLocation not available.") + (S.medical?`\nMedical info: ${S.medical}`:"") + `\nSent from Muru Vision at ${new Date().toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}`;
+  $("#sosMsg").textContent = msg;
+  const enc = encodeURIComponent(msg);
+  const nums = S.contacts.map(c=>c.phone).join(",");
+  const acts = [
+    `<a class="btn danger" href="tel:112">Call 112</a>`,
+    `<a class="btn danger" href="tel:108">Ambulance 108</a>`,
+    ...S.contacts.slice(0,4).map(c=>`<a class="btn" href="tel:${esc(c.phone)}">Call ${esc(c.name)}</a>`),
+    nums ? `<a class="btn primary" href="sms:${nums}?&body=${enc}">SMS all contacts</a>` : "",
+    `<a class="btn primary" href="https://wa.me/?text=${enc}" target="_blank" rel="noopener">WhatsApp</a>`,
+    `<button class="btn" id="sosCopy">Copy message</button>`
+  ].filter(Boolean).join("");
+  $("#sosActs").innerHTML = acts;
+  $("#sosCopy").onclick = async () => { try { await navigator.clipboard.writeText(msg); toast("Copied. Paste it in any app."); } catch(e){ const r=document.createRange(); r.selectNodeContents($("#sosMsg")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast("Message selected. Copy it."); } };
+  if (!S.contacts.length) toast("Add trusted contacts below so SOS can reach them.", 5000);
+  speak("Emergency mode is on. Tap call or send.", "en");
+}
+$("#sosOff").onclick = () => { $("#sosPanel").hidden = true; };
+(() => {
+  const btn=$("#sosBtn"), ring=$("#sosRing"); let t0=0, raf=0;
+  const reset = () => { cancelAnimationFrame(raf); ring.style.strokeDashoffset = 578; };
+  const tick = () => { const p=Math.min(1,(Date.now()-t0)/2000); ring.style.strokeDashoffset = 578*(1-p); if(p>=1){ reset(); startSOS(); return; } raf=requestAnimationFrame(tick); };
+  btn.addEventListener("pointerdown", e => { e.preventDefault(); t0=Date.now(); raf=requestAnimationFrame(tick); });
+  ["pointerup","pointerleave","pointercancel"].forEach(ev => btn.addEventListener(ev, reset));
+  btn.addEventListener("keydown", e => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); startSOS(); } });
+  btn.addEventListener("contextmenu", e => e.preventDefault());
+})();
+
+/* ================= SETTINGS ================= */
+const STATUS = [
+  ["live","Voice assistant: ask, notes, reminders, find items, maps"],
+  ["live","Voice translation: Kannada, Hindi, English, Telugu with auto-detect"],
+  ["live","Camera: describe, read and translate text, product help"],
+  ["live","Notes, reminders, keep an eye, saved photos"],
+  ["live","Meeting recording with summary"],
+  ["part","Continuous vision: only while this screen is open"],
+  ["part","SOS: shares location by your tap; can't call or send by itself"],
+  ["part","Reminders ring only while Muru is open"],
+  ["soon","V2: health monitoring, phone control, smart home, AI shopping, gestures"],
+  ["soon","The physical Human Assistant Cam device"]
+];
+function openSettings(){
+  const s=S.settings;
+  $("#setName").value=s.name; $("#setKey").value=s.key; $("#setModel").value=s.model; $("#setTts").value=s.tts;
+  $("#setVoice").value=s.voice; $("#setRate").value=s.rate; $("#rateV").textContent=(+s.rate).toFixed(1)+"×";
+  $("#statusList").innerHTML = STATUS.map(([k,t])=>`<span class="s ${k}">${k==="live"?"Works":k==="part"?"Partly":"Later"}</span><span>${esc(t)}</span>`).join("");
+  $("#testOut").textContent=""; $("#wipeConfirm").hidden=true;
+  applyTheme(); $("#settings").hidden=false;
+}
+$("#openSettings").onclick = openSettings;
+$("#closeSettings").onclick = () => { $("#settings").hidden=true; greet(); };
+$("#settings").onclick = e => { if(e.target.id==="settings") { $("#settings").hidden=true; greet(); } };
+$("#setName").oninput = e => { S.settings.name=e.target.value.trim(); save(); };
+$("#setKey").oninput = e => { S.settings.key=e.target.value.trim(); geminiBlocked=false; save(); refreshAIState(); };
+$("#setModel").onchange = e => { S.settings.model=e.target.value.trim()||DEF.settings.model; save(); };
+$("#setTts").onchange = e => { S.settings.tts=e.target.value.trim()||DEF.settings.tts; save(); };
+$("#setVoice").onchange = e => { S.settings.voice=e.target.value; save(); };
+$("#setRate").oninput = e => { S.settings.rate=+e.target.value; $("#rateV").textContent=(+e.target.value).toFixed(1)+"×"; save(); };
+$("#showKey").onclick = () => { const i=$("#setKey"); i.type = i.type==="password"?"text":"password"; $("#showKey").textContent = i.type==="password"?"Show":"Hide"; };
+document.querySelectorAll("#themeChips .chip").forEach(c => c.onclick = () => { S.settings.theme=c.dataset.t; save(); applyTheme(); });
+$("#testKey").onclick = async () => {
+  const o=$("#testOut");
+  if(!S.settings.key){ o.textContent="Paste your key first."; return; }
+  o.textContent="Testing…"; geminiBlocked=false;
+  try {
+    await geminiText({parts:[{text:'Reply with JSON {"ok":true}'}], json:true});
+    o.textContent="✓ Connected to Gemini"; await refreshAIState();
+  } catch(e){
+    o.textContent = e.network ? "Can't reach Google from here. Inside the Claude preview this is expected; it works in the hosted app." : "✗ "+e.message;
+    if (e.network) { geminiBlocked=true; refreshAIState(); }
+  }
+};
+$("#wipe").onclick = () => $("#wipeConfirm").hidden=false;
+$("#wipeNo").onclick = () => $("#wipeConfirm").hidden=true;
+$("#wipeYes").onclick = async () => {
+  for (const p of await photoAll()) await photoDel(p.id);
+  const keep = S.settings.theme; S = structuredClone(DEF); S.settings.theme = keep; save();
+  $("#settings").hidden=true; init(); toast("All Muru data deleted from this phone.");
+};
+
+function greet(){
+  const h = new Date().getHours(); const part = h<12?"Good morning":h<17?"Good afternoon":"Good evening";
+  $("#greet").textContent = S.settings.name ? `${part}, ${S.settings.name}` : "Human Assistant Cam · phone mode";
+}
+
+/* ---------- start ---------- */
+function init(){
+  applyTheme(); greet(); fillLangs(); renderChat(); renderTrHist(); renderContacts();
+  $("#medInfo").value = S.medical || "";
+  const d = new Date(Date.now()+3600e3); d.setSeconds(0,0);
+  $("#remWhen").value = new Date(d - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  refreshAIState();
+  if (!S.settings.key) setTimeout(async () => { await getSample(); await refreshAIState(); if (aiState==="none") { toast("Welcome! Add your Gemini key in Settings to switch on the AI.", 6000); } }, 600);
+}
+init();
+})();
+</script>
+</body>
+</html>
