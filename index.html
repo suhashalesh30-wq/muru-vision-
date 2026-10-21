@@ -292,7 +292,6 @@ details summary{cursor:pointer;font-weight:700}
       <button class="chip" data-q="What can you do?">What can you do?</button>
       <button class="chip" data-q="Note: meeting with investors on Friday">Make a note</button>
       <button class="chip" data-q="Remind me to take my medicine at 8 PM">Set a reminder</button>
-      <button class="chip" data-q="Where did I keep my wallet?">Where's my wallet?</button>
       <button class="chip" data-q="Find the nearest hospital">Nearest hospital</button>
     </div>
     <div class="chat" id="chat" aria-live="polite"></div>
@@ -354,7 +353,6 @@ details summary{cursor:pointer;font-weight:700}
       <div class="row">
         <button class="btn sm" id="seeSpeak">Read aloud</button>
         <button class="btn sm" id="seeSave">Save photo</button>
-        <button class="btn sm" id="seeKeep">Keep an eye on it</button>
       </div>
     </div>
     <div class="card">
@@ -372,7 +370,6 @@ details summary{cursor:pointer;font-weight:700}
     <div class="seg" role="tablist" id="memSeg">
       <button role="tab" aria-selected="true" data-p="notes">Notes</button>
       <button role="tab" aria-selected="false" data-p="rem">Reminders</button>
-      <button role="tab" aria-selected="false" data-p="eye">Keep eye</button>
       <button role="tab" aria-selected="false" data-p="photos">Photos</button>
       <button role="tab" aria-selected="false" data-p="meet">Meetings</button>
     </div>
@@ -396,18 +393,8 @@ details summary{cursor:pointer;font-weight:700}
       <div class="card"><div class="list" id="remList"></div></div>
     </div>
 
-    <div id="p-eye" class="view" style="padding:0" hidden>
-      <div class="card">
-        <p class="small muted" style="margin:0">Snap the thing and where you left it. Later, ask Muru "where is my wallet?"</p>
-        <label class="f">Item<input type="text" id="eyeName" placeholder="Bike key"></label>
-        <label class="f">Where (optional, Muru can describe it from the photo)<input type="text" id="eyeWhere" placeholder="On the shelf near the door"></label>
-        <div class="row"><label class="btn primary grow" for="eyeCam">Snap and save</label><input type="file" id="eyeCam" accept="image/*" capture="environment" hidden><button class="btn" id="eyeNoPhoto">Save without photo</button></div>
-      </div>
-      <div class="card"><div class="list" id="eyeList"></div></div>
-    </div>
-
     <div id="p-photos" class="view" style="padding:0" hidden>
-      <div class="card"><div class="grid" id="photoGrid"></div><div class="empty" id="photoEmpty">Photos you save from See or Keep an eye show up here. They stay on this phone.</div></div>
+      <div class="card"><div class="grid" id="photoGrid"></div><div class="empty" id="photoEmpty">Photos you save from See show up here. They stay on this phone.</div></div>
     </div>
 
     <div id="p-meet" class="view" style="padding:0" hidden>
@@ -825,12 +812,10 @@ document.querySelectorAll(".dock button").forEach(b => b.onclick = () => go(b.da
 /* ================= ASSIST ================= */
 function assistSystem(){
   const now = new Date();
-  const items = S.items.slice(0,20).map(i => `- ${i.name}: ${i.where||"no place noted"} (saved ${ago(i.ts)})`).join("\n") || "none";
   const notes = S.notes.slice(0,15).map(n => `- ${n.text.slice(0,160)}`).join("\n") || "none";
   const rems = S.reminders.filter(r=>!r.done).slice(0,10).map(r => `- ${r.text} at ${new Date(r.when).toLocaleString()}`).join("\n") || "none";
   return `You are Muru, the voice assistant inside Muru Vision, a screenless AI companion. Be warm, brief and practical: 1 to 3 short sentences, because answers are read aloud. Reply in the language the user used (Kannada, Hindi, Telugu or English).
 User name: ${S.settings.name || "unknown"}. Current local time: ${now.toString()}.
-Their kept items:\n${items}
 Their notes:\n${notes}
 Their upcoming reminders:\n${rems}
 Reply ONLY with JSON: {"reply": string, "lang": "kn"|"hi"|"te"|"en", "actions": [ ... ]}
@@ -840,7 +825,7 @@ Possible actions (use only when clearly asked):
 {"type":"open","screen":"translate"|"see"|"memory"|"sos"}
 {"type":"sos"}  (only if the user says they are in danger or asks for SOS)
 {"type":"maps","query":string}  (for places, directions, nearest hospital etc.)
-For "where is my X" questions, answer from the kept items. If a request needs live data you don't have, say so briefly.`;
+If a request needs live data you don't have, say so briefly.`;
 }
 function renderChat(){
   const c = $("#chat"); c.innerHTML = "";
@@ -1047,7 +1032,6 @@ async function runSee(q){
 }
 $("#seeSpeak").onclick = () => speak(seeAnswer, "en");
 $("#seeSave").onclick = async () => { if(!seeBlob) return; await photoPut({id:uid(), ts:Date.now(), blob:seeBlob, label: seeAnswer.slice(0,120)}); toast("Saved to Memory › Photos"); };
-$("#seeKeep").onclick = () => { go("memory"); memTab("eye"); toast("Name the item, then tap Snap and save."); };
 
 /* live look */
 let live = {on:false, stream:null, iv:null, frames:[]};
@@ -1088,14 +1072,13 @@ let memCur = "notes";
 function memTab(p){
   memCur = p;
   document.querySelectorAll("#memSeg button").forEach(b=>b.setAttribute("aria-selected", String(b.dataset.p===p)));
-  for (const k of ["notes","rem","eye","photos","meet"]) $("#p-"+k).hidden = k!==p;
+  for (const k of ["notes","rem","photos","meet"]) $("#p-"+k).hidden = k!==p;
   renderMemory();
 }
 document.querySelectorAll("#memSeg button").forEach(b => b.onclick = () => memTab(b.dataset.p));
 function renderMemory(){
   if (memCur==="notes") renderNotes();
   if (memCur==="rem") renderRem();
-  if (memCur==="eye") renderEye();
   if (memCur==="photos") renderPhotos();
   if (memCur==="meet") renderMeet();
 }
@@ -1148,41 +1131,6 @@ setInterval(() => {
   }
   if (fired) { save(); if(memCur==="rem") renderRem(); }
 }, 15000);
-/* keep an eye */
-async function renderEye(){
-  const list = S.items;
-  if (!list.length) { $("#eyeList").innerHTML = `<div class="empty">Nothing saved yet.</div>`; return; }
-  const rows = await Promise.all(list.map(async it => {
-    let img = "";
-    if (it.photo) { const p = await photoGet(it.photo); if (p) img = `<img class="thumb" alt="" src="${URL.createObjectURL(p.blob)}">`; }
-    return `<div class="li">${img || `<div class="thumb"></div>`}<div class="body"><div style="font-weight:700">${esc(it.name)}</div><div>${esc(it.where||"")}</div><div class="meta">Last seen ${ago(it.ts)}</div></div><button class="btn sm ghost" data-d="${it.id}" aria-label="Delete">✕</button></div>`;
-  }));
-  $("#eyeList").innerHTML = rows.join("");
-  $("#eyeList").querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ const it=S.items.find(x=>x.id===b.dataset.d); if(it?.photo) photoDel(it.photo); S.items=S.items.filter(x=>x.id!==b.dataset.d); save(); renderEye(); });
-}
-function eyeSave(where, photoId){
-  const name = $("#eyeName").value.trim() || "Item";
-  const ex = S.items.find(i => i.name.toLowerCase()===name.toLowerCase());
-  if (ex) { if (ex.photo && photoId) photoDel(ex.photo); Object.assign(ex, {where, ts:Date.now(), photo:photoId||ex.photo}); }
-  else S.items.unshift({id:uid(), name, where, ts:Date.now(), photo:photoId||null});
-  save(); $("#eyeName").value=""; $("#eyeWhere").value=""; renderEye(); toast("Saved: "+name);
-}
-$("#eyeNoPhoto").onclick = () => { if(!$("#eyeName").value.trim()){ toast("Type the item name."); return; } eyeSave($("#eyeWhere").value.trim(), null); };
-$("#eyeCam").onchange = async e => {
-  const f = e.target.files[0]; e.target.value=""; if(!f) return;
-  const name = $("#eyeName").value.trim() || "Item";
-  toast("Saving "+name+"…");
-  const blob = await shrink(f, 1024); const pid = uid();
-  await photoPut({id:pid, ts:Date.now(), blob, label:"Keep an eye: "+name});
-  let where = $("#eyeWhere").value.trim();
-  if (!where) {
-    try {
-      const r = await ask({parts:[{text:`The user put their "${name}" here. In one short sentence, describe where it is placed so they can find it later (surface, nearby objects, room clues). Reply ONLY JSON {"where": string}`}, {mime:"image/jpeg", b64:await blobToB64(blob), blob}], json:true, tier:"quick"});
-      where = r.where || "";
-    } catch(e){ where = ""; }
-  }
-  eyeSave(where, pid);
-};
 /* photos */
 async function renderPhotos(){
   const all = await photoAll();
@@ -1268,15 +1216,15 @@ $("#sosOff").onclick = () => { $("#sosPanel").hidden = true; };
 
 /* ================= SETTINGS ================= */
 const STATUS = [
-  ["live","Voice assistant: ask, notes, reminders, find items, maps"],
+  ["live","Voice assistant: ask, notes, reminders, maps"],
   ["live","Voice translation: Kannada, Hindi, English, Telugu with auto-detect"],
   ["live","Camera: describe, read and translate text, product help"],
-  ["live","Notes, reminders, keep an eye, saved photos"],
+  ["live","Notes, reminders, saved photos"],
   ["live","Meeting recording with summary"],
   ["part","Continuous vision: only while this screen is open"],
   ["part","SOS: shares location by your tap; can't call or send by itself"],
   ["part","Reminders ring only while Muru is open"],
-  ["soon","V2: health monitoring, phone control, smart home, AI shopping, gestures"],
+  ["soon","V2: health monitoring, phone control, smart home, AI shopping, gestures, keep an eye on items"],
   ["soon","The physical Human Assistant Cam device"]
 ];
 function openSettings(){
