@@ -523,27 +523,32 @@ async function refreshAIState(){
   $("#aiPill").title = aiState==="gemini" ? "Answers come from Gemini with your key" : aiState==="claude" ? "Gemini can't be reached in this preview, so Claude answers. Voice and audio features need the Gemini version." : "Add your Gemini key in Settings";
 }
 
-function modelChain(m){ return [...new Set([m, "gemini-flash-latest", "gemini-2.5-flash"].filter(Boolean))]; }
+function modelChain(m){ return [...new Set([goodModel, m, "gemini-flash-latest", "gemini-2.5-flash"].filter(Boolean))]; }
 
-async function geminiCall(model, body){
-  let r;
+async function geminiCall(model, body, timeoutMs=30000){
+  let r, j;
+  const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), timeoutMs);
   try {
     r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent", {
-      method:"POST", headers:{"Content-Type":"application/json","x-goog-api-key":S.settings.key}, body:JSON.stringify(body)
+      method:"POST", headers:{"Content-Type":"application/json","x-goog-api-key":S.settings.key}, body:JSON.stringify(body), signal:ctl.signal
     });
+    j = await r.json().catch(()=>({}));
   } catch(e) {
+    if (ctl.signal.aborted) throw new Error("Gemini took too long to answer. Check your internet and try again.");
     const err = new Error("NETWORK"); err.network = true; throw err;
-  }
-  const j = await r.json().catch(()=>({}));
+  } finally { clearTimeout(t); }
   if (!r.ok) { const err = new Error(j.error?.message || ("Gemini error "+r.status)); err.status = r.status; throw err; }
   return j;
 }
+let goodModel = null;   // first model that answered this session, so later calls skip ones that 404
+let thinkCfgRejected = false;   // set if a model refuses thinkingConfig
 
 async function geminiText({system, parts, search=false, json=true}){
   const body = {
     contents:[{role:"user", parts: parts.map(p => p.text!==undefined ? {text:p.text} : {inline_data:{mime_type:p.mime, data:p.b64}})}],
     generationConfig:{temperature:0.4}
   };
+  if (!thinkCfgRejected) body.generationConfig.thinkingConfig = {thinkingBudget:0};   // skip the thinking step: much faster replies
   if (system) body.systemInstruction = {parts:[{text:system}]};
   if (search) body.tools = [{google_search:{}}];
   else if (json) body.generationConfig.responseMimeType = "application/json";
@@ -551,12 +556,14 @@ async function geminiText({system, parts, search=false, json=true}){
   for (const m of modelChain(S.settings.model)) {
     try {
       const j = await geminiCall(m, body);
+      goodModel = m;
       const text = (j.candidates?.[0]?.content?.parts || []).map(p=>p.text||"").join("").trim();
       if (!text) throw new Error(j.promptFeedback?.blockReason ? "Gemini blocked this request ("+j.promptFeedback.blockReason+")." : "Gemini returned an empty answer. Try again.");
       return text;
     } catch(e) {
       last = e;
       if (e.network) throw e;
+      if (e.status === 400 && /thinking/i.test(e.message) && !thinkCfgRejected) { thinkCfgRejected = true; return geminiText({system, parts, search, json}); }
       if (search && e.status === 400) { return geminiText({system, parts, search:false, json}); }
       if (e.status === 404 || /not found|not supported/i.test(e.message)) continue;
       throw e;
@@ -662,7 +669,7 @@ async function speak(text, langCode){
       const body = {contents:[{parts:[{text}]}], generationConfig:{responseModalities:["AUDIO"], speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:"Kore"}}}}};
       let j, last;
       for (const m of [...new Set([S.settings.tts, "gemini-2.5-flash-preview-tts"])]) {
-        try { j = await geminiCall(m, body); break; } catch(e){ last=e; if(e.network) throw e; if(e.status===404) continue; throw e; }
+        try { j = await geminiCall(m, body, 20000); break; } catch(e){ last=e; if(e.network) throw e; if(e.status===404) continue; throw e; }
       }
       if (!j) throw last;
       const part = (j.candidates?.[0]?.content?.parts||[]).find(p=>p.inlineData||p.inline_data);
