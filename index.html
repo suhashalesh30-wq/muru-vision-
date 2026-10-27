@@ -607,8 +607,8 @@ details summary{cursor:pointer;font-weight:700}
     <div class="card">
       <span class="eyebrow">Change Your UI</span>
       <div class="uipick" id="uiPick">
-        <button data-ui="classic"><span class="uiprev classic" aria-hidden="true"><i></i><b></b><em></em></span><span><b>Classic Muru Vision</b><small>The original Liquid Glass look, with your background colour.</small></span></button>
-        <button data-ui="apple"><span class="uiprev apple" aria-hidden="true"><i></i><b></b><em></em></span><span><b>Apple-Inspired UI</b><small>Clean and minimal, with a big mic. Follows your phone's light or dark mode.</small></span></button>
+        <button data-ui="classic"><span class="uiprev classic" aria-hidden="true"><i></i><b></b><em></em></span><span><b>Classic UI version</b><small>The original Liquid Glass look, with your background colour.</small></span></button>
+        <button data-ui="apple"><span class="uiprev apple" aria-hidden="true"><i></i><b></b><em></em></span><span><b>i UI version</b><small>Clean and minimal, with a big mic. Follows your phone's light or dark mode.</small></span></button>
       </div>
       <span class="small muted" id="uiName"></span>
     </div>
@@ -724,7 +724,7 @@ const BGS = [
   {id:"teal", n:"Deep teal", c:"#0E3B3F"}, {id:"plum", n:"Plum", c:"#2D1B45"},
   {id:"warm", n:"Warm white", c:"#ECE8E2", light:true}, {id:"sky", n:"Sky", c:"#D9E6F5", light:true},
 ];
-const UIS = [{id:"classic", n:"Classic Muru Vision"}, {id:"apple", n:"Apple-Inspired UI"}];
+const UIS = [{id:"classic", n:"Classic UI version"}, {id:"apple", n:"i UI version"}];
 function applyTheme(){
   const b = BGS.find(x => x.id === S.settings.bg) || BGS[0];
   const ui = UIS.find(x => x.id === S.settings.ui) || UIS[0];
