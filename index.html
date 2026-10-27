@@ -7,6 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Muru">
 <style>:root{padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script>try{if((JSON.parse(localStorage.getItem("muru.v1"))||{}).settings?.ui==="apple")document.documentElement.setAttribute("data-ui","apple")}catch(e){}</script>
 </head>
 <body>
 <title>Muru Vision</title>
@@ -269,6 +270,133 @@ details summary{cursor:pointer;font-weight:700}
 .swatches button{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);background:var(--c);transition:transform .4s var(--spring)}
 .swatches button[aria-pressed="true"]{border-color:var(--fg);transform:scale(1.12);box-shadow:0 0 0 3px var(--solid),0 0 0 5px var(--fg)}
 .ver{font-size:12px;color:var(--muted);text-align:center}
+
+/* ---------- Change Your UI picker (Settings) ---------- */
+.uipick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.uipick button{border:0;border-radius:18px;padding:10px;display:flex;flex-direction:column;gap:8px;text-align:left;background:var(--sunk);box-shadow:inset 0 0 0 1.5px var(--line);transition:box-shadow .25s}
+.uipick button[aria-pressed="true"]{box-shadow:inset 0 0 0 2.5px var(--fg)}
+.uipick b{font-size:14px;line-height:1.25}
+.uipick small{display:block;font-size:12px;color:var(--muted);line-height:1.35;margin-top:2px}
+.uiprev{display:block;height:84px;border-radius:12px;position:relative;overflow:hidden}
+.uiprev i,.uiprev b,.uiprev em{position:absolute;display:block}
+.uiprev i{left:50%;top:14px;width:36px;height:36px;margin-left:-18px;border-radius:50%}
+.uiprev b{left:14%;right:14%;top:58px;height:8px;border-radius:4px}
+.uiprev em{left:10%;right:10%;bottom:6px;height:9px;border-radius:99px}
+.uiprev.classic{background:#13213F}
+.uiprev.classic i{background:linear-gradient(160deg,rgba(255,255,255,.42),rgba(255,255,255,.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+.uiprev.classic b{background:rgba(255,255,255,.18)}
+.uiprev.classic em{background:rgba(255,255,255,.22)}
+.uiprev.apple{background:#F2F2F7}
+.uiprev.apple i{background:#0A66D6;box-shadow:0 3px 8px rgba(10,102,214,.35)}
+.uiprev.apple b{background:linear-gradient(90deg,#fff 0 22%,transparent 0 26%,#fff 0 48%,transparent 0 52%,#fff 0 74%,transparent 0 78%,#fff 0)}
+.uiprev.apple em{background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.12)}
+.uipick button[aria-pressed="true"] .uiprev::after{content:"✓";position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:#0A66D6;color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+.quick{display:none}
+
+/* ---------- Apple-inspired UI (Settings → Change Your UI) ----------
+   Classic above stays the default. Everything below applies only when <html data-ui="apple">;
+   :where() keeps each rule exactly as strong as the classic rule it replaces. */
+:root[data-ui="apple"]{
+  --solid:#F2F2F7; --card:#FFFFFF; --bar:rgba(255,255,255,.78); --fill:rgba(118,118,128,.12);
+  --fg:#1C1C1E; --muted:rgba(60,60,67,.75); --line:rgba(60,60,67,.16); --sunk:rgba(118,118,128,.12);
+  --glass:var(--card); --rim:0 0 0 .5px rgba(0,0,0,.04);
+  --lift:0 1px 2px rgba(0,0,0,.04),0 6px 18px rgba(0,0,0,.06); --shadow:var(--lift);
+  --accent:#0A66D6; --tint:#0A66D6; --accent-ink:#FFFFFF; --accent-soft:rgba(10,102,214,.12);
+  --marigold:#A35200; --marigold-soft:rgba(255,149,0,.16);
+  --danger:#D70015; --danger-soft:rgba(255,59,48,.12); --ok:#248A3D;
+  --sheen:transparent; --spec:transparent;
+  --display:-apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",Roboto,"Noto Sans Kannada","Noto Sans Telugu","Noto Sans Devanagari",sans-serif;
+  --body:var(--display);
+  --r:18px; --spring:cubic-bezier(.25,.8,.3,1); --ease:cubic-bezier(.32,.72,0,1);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root[data-ui="apple"]{
+  --solid:#000000; --card:#1C1C1E; --bar:rgba(30,30,32,.78); --fill:rgba(118,118,128,.24);
+  --fg:#F5F5F7; --muted:rgba(235,235,245,.66); --line:rgba(84,84,88,.55); --sunk:rgba(118,118,128,.24);
+  --rim:0 0 0 .5px rgba(255,255,255,.06); --lift:0 1px 2px rgba(0,0,0,.4);
+  --accent:#0A6FE8; --tint:#4C9EFF; --accent-soft:rgba(76,158,255,.18);
+  --marigold:#FFB340; --marigold-soft:rgba(255,159,10,.2);
+  --danger:#E5242F; --danger-soft:rgba(255,69,58,.2); --ok:#30D158;
+  color-scheme:dark;
+}}
+:where(:root[data-ui="apple"]) body{font-size:16px;-webkit-font-smoothing:antialiased}
+:where(:root[data-ui="apple"]) :focus-visible{outline-color:var(--tint)}
+:where(:root[data-ui="apple"]) h1,:where(:root[data-ui="apple"]) h2,:where(:root[data-ui="apple"]) h3{font-weight:700;letter-spacing:-.02em}
+:where(:root[data-ui="apple"]) h2{font-size:28px}
+:where(:root[data-ui="apple"]) .hello{font-size:32px}
+/* calm, solid surfaces: no sweeping shine or finger highlight, and blur only on the two bars */
+:where(:root[data-ui="apple"]) :is(.card,.btn,.chip,.pill,.dock nav,.orb,.speakbtn,.result)::before,
+:where(:root[data-ui="apple"]) :is(.card,.btn,.orb,.dock nav,.speakbtn)::after{display:none}
+:where(:root[data-ui="apple"]) .card,:where(:root[data-ui="apple"]) .btn,:where(:root[data-ui="apple"]) .chip,:where(:root[data-ui="apple"]) .pill,
+:where(:root[data-ui="apple"]) .iconbtn,:where(:root[data-ui="apple"]) .swap,:where(:root[data-ui="apple"]) .result,:where(:root[data-ui="apple"]) .speakbtn,
+:where(:root[data-ui="apple"]) .seg,:where(:root[data-ui="apple"]) .msg.ai,:where(:root[data-ui="apple"]) .preview,:where(:root[data-ui="apple"]) .notice,
+:where(:root[data-ui="apple"]) .orb,:where(:root[data-ui="apple"]) .sheet .panel,:where(:root[data-ui="apple"]) input[type=text],
+:where(:root[data-ui="apple"]) input[type=password],:where(:root[data-ui="apple"]) input[type=tel],:where(:root[data-ui="apple"]) input[type=datetime-local],
+:where(:root[data-ui="apple"]) select,:where(:root[data-ui="apple"]) textarea{backdrop-filter:none;-webkit-backdrop-filter:none}
+:where(:root[data-ui="apple"]) .top{background:color-mix(in srgb,var(--solid) 80%,transparent);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
+:where(:root[data-ui="apple"]) .brand b{font-weight:700;font-size:20px}
+:where(:root[data-ui="apple"]) .iconbtn{background:var(--fill);box-shadow:none}
+:where(:root[data-ui="apple"]) .view.enter>*{animation:fadeup .35s var(--ease) both;animation-delay:calc(var(--i,0) * 30ms)}
+@keyframes fadeup{from{opacity:0;transform:translateY(8px)}}
+:where(:root[data-ui="apple"]) .btn{border-radius:14px;background:var(--fill);box-shadow:none;font-weight:600;transition:transform .2s var(--ease)}
+:where(:root[data-ui="apple"]) .btn:active,:where(:root[data-ui="apple"]) .chip:active,:where(:root[data-ui="apple"]) .speakbtn:active,:where(:root[data-ui="apple"]) .swap:active{transform:scale(.97);transition-duration:.1s}
+:where(:root[data-ui="apple"]) .btn.primary{box-shadow:none}
+:where(:root[data-ui="apple"]) .btn.ghost{color:var(--tint)}
+:where(:root[data-ui="apple"]) .chip{box-shadow:var(--rim),0 1px 2px rgba(0,0,0,.06);font-weight:600}
+:where(:root[data-ui="apple"]) .sugg .chip{animation:none}
+:where(:root[data-ui="apple"]) input[type=text],:where(:root[data-ui="apple"]) input[type=password],:where(:root[data-ui="apple"]) input[type=tel],
+:where(:root[data-ui="apple"]) input[type=datetime-local],:where(:root[data-ui="apple"]) select,:where(:root[data-ui="apple"]) textarea{border-radius:12px;box-shadow:inset 0 0 0 1px var(--line)}
+:where(:root[data-ui="apple"]) .composer input{border-radius:99px}
+/* the prominent microphone */
+:where(:root[data-ui="apple"]) .orbwrap{padding:18px 0 4px}
+:where(:root[data-ui="apple"]) .orbwrap::before{display:none}
+:where(:root[data-ui="apple"]) .orb{width:136px;height:136px;background:var(--accent);color:#fff;animation:none;transition:transform .2s var(--ease),background .25s;
+  box-shadow:0 10px 30px color-mix(in srgb,var(--accent) 35%,transparent),0 2px 6px rgba(0,0,0,.12)}
+:where(:root[data-ui="apple"]) .orb svg{width:48px;height:48px;filter:none}
+:where(:root[data-ui="apple"]) .orb:active{transform:scale(.95)}
+:where(:root[data-ui="apple"]) .orb.small{width:96px;height:96px}
+:where(:root[data-ui="apple"]) .orb.small svg{width:34px;height:34px}
+:where(:root[data-ui="apple"]) .orb .eq i{background:#fff}
+:where(:root[data-ui="apple"]) .orb .rip{border-color:var(--accent)}
+:where(:root[data-ui="apple"]) .orb .spin{background:conic-gradient(from 0deg,transparent 0 70%,var(--tint) 100%)}
+:where(:root[data-ui="apple"]) .orb.rec{animation:none;background:var(--danger);box-shadow:0 10px 30px color-mix(in srgb,var(--danger) 35%,transparent)}
+:where(:root[data-ui="apple"]) .orb.rec .rip{border-color:var(--danger)}
+:where(:root[data-ui="apple"]) .chat .msg:last-child,:where(:root[data-ui="apple"]) .chat .msg:nth-last-child(2),
+:where(:root[data-ui="apple"]) .result,:where(:root[data-ui="apple"]) .li{animation:fadeup .3s var(--ease) both}
+/* iOS-style segmented control */
+:where(:root[data-ui="apple"]) .seg{background:var(--fill);box-shadow:none;border-radius:10px;padding:2px;grid-template-columns:repeat(4,1fr)}
+:where(:root[data-ui="apple"]) .seg button{border-radius:8px;color:var(--fg);font-weight:600;padding:7px 2px}
+:where(:root[data-ui="apple"]) .seg button[aria-selected="true"]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04);transform:none}
+:where(:root[data-ui="apple"]) .sosbtn{background:var(--danger);animation:none;box-shadow:0 0 0 10px var(--danger-soft),0 12px 32px color-mix(in srgb,var(--danger) 35%,transparent)}
+/* tab bar */
+:where(:root[data-ui="apple"]) .dock nav{background:var(--bar);border-radius:26px;backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);box-shadow:0 0 0 .5px var(--line),0 8px 24px rgba(0,0,0,.08)}
+:where(:root[data-ui="apple"]) .dock .drop{background:var(--accent-soft);box-shadow:none;border-radius:20px;transition:transform .35s var(--ease),width .35s var(--ease)}
+:where(:root[data-ui="apple"]) .dock .drop.stretch{animation:none}
+:where(:root[data-ui="apple"]) .dock button{font-weight:600}
+:where(:root[data-ui="apple"]) .dock button[aria-current="page"]{color:var(--tint)}
+:where(:root[data-ui="apple"]) .dock button[aria-current="page"] svg{transform:none}
+:where(:root[data-ui="apple"]) .dock button.sos{color:var(--danger)}
+:where(:root[data-ui="apple"]) .sheet{background:rgba(0,0,0,.32)}
+:where(:root[data-ui="apple"]) .sheet .panel{border-radius:20px 20px 0 0;animation:sheetin .4s var(--ease) both}
+@keyframes sheetin{from{transform:translateY(40px);opacity:0}}
+:where(:root[data-ui="apple"]) .toast{border-radius:14px}
+:where(:root[data-ui="apple"]) .uipick button[aria-pressed="true"]{box-shadow:inset 0 0 0 2.5px var(--tint)}
+:where(:root[data-ui="apple"]) #bgCard{display:none}
+/* quick access row on the assistant screen (placed under the mic with flex order, so classic DOM order is unchanged) */
+:where(:root[data-ui="apple"]) #v-assist>*{order:2}
+:where(:root[data-ui="apple"]) #v-assist>.hello,:where(:root[data-ui="apple"]) #v-assist>.orbwrap{order:0}
+:where(:root[data-ui="apple"]) #v-assist>.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;order:1}
+:where(:root[data-ui="apple"]) .quick button{border:0;background:var(--card);box-shadow:var(--rim),var(--lift);border-radius:16px;padding:12px 4px 10px;min-height:76px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:600;transition:transform .2s var(--ease)}
+:where(:root[data-ui="apple"]) .quick button:active{transform:scale(.96)}
+:where(:root[data-ui="apple"]) .quick svg{width:26px;height:26px;color:var(--tint)}
+@media (min-width:768px){
+  :where(:root[data-ui="apple"]) .app{max-width:720px}
+  :where(:root[data-ui="apple"]) .quick{gap:14px}
+  :where(:root[data-ui="apple"]) .dock nav{max-width:560px}
+  :where(:root[data-ui="apple"]) .sheet{align-items:center}
+  :where(:root[data-ui="apple"]) .sheet .panel{max-width:620px;max-height:86%;border-radius:20px}
+}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 
@@ -300,6 +428,12 @@ details summary{cursor:pointer;font-weight:700}
       <button class="btn primary" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
     </form>
     <button class="btn ghost sm" id="clearChat" style="align-self:flex-start">Clear conversation</button>
+    <div class="quick" aria-label="Quick access">
+      <button data-go="see"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="4"/></svg>Camera</button>
+      <button data-go="translate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h9M8.5 3v2M6 5c1 4 4 7 7 8M11 5c-1 4-4 7-7 8M13 21l4-10 4 10M14.5 17h5"/></svg>Translate</button>
+      <button data-go="memory" data-mem="notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h3"/></svg>Notes</button>
+      <button data-go="memory" data-mem="rem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M5 3 2 6M19 3l3 3"/></svg>Reminders</button>
+    </div>
   </section>
 
   <!-- TRANSLATE -->
@@ -471,6 +605,14 @@ details summary{cursor:pointer;font-weight:700}
       <label class="f">Speaking speed <span id="rateV" class="kbd">1.0×</span><input type="range" id="setRate" min="0.6" max="1.4" step="0.1"></label>
     </div>
     <div class="card">
+      <span class="eyebrow">Change Your UI</span>
+      <div class="uipick" id="uiPick">
+        <button data-ui="classic"><span class="uiprev classic" aria-hidden="true"><i></i><b></b><em></em></span><span><b>Classic Muru Vision</b><small>The original Liquid Glass look, with your background colour.</small></span></button>
+        <button data-ui="apple"><span class="uiprev apple" aria-hidden="true"><i></i><b></b><em></em></span><span><b>Apple-Inspired UI</b><small>Clean and minimal, with a big mic. Follows your phone's light or dark mode.</small></span></button>
+      </div>
+      <span class="small muted" id="uiName"></span>
+    </div>
+    <div class="card" id="bgCard">
       <span class="eyebrow">Background colour</span>
       <div class="swatches" id="bgSwatches"></div>
       <span class="small muted" id="bgName"></span>
@@ -514,7 +656,7 @@ const L = c => LANGS.find(l=>l.c===c) || {c, n:c, t:c};
 /* ---------- storage ---------- */
 const KEY = "muru.v1";
 const DEF = {
-  settings:{name:"", key:"", model:"gemini-3.8-flash", tts:"gemini-3.8-flash-tts", voice:"gemini", rate:1, theme:"system", bg:"midnight", myLang:"kn", theirLang:"hi"},
+  settings:{name:"", key:"", model:"gemini-3.8-flash", tts:"gemini-3.8-flash-tts", voice:"gemini", rate:1, theme:"system", bg:"midnight", ui:"classic", myLang:"kn", theirLang:"hi"},
   chat:[], notes:[], reminders:[], items:[], contacts:[], medical:"", trHist:[], meetings:[]
 };
 let S;
@@ -582,13 +724,24 @@ const BGS = [
   {id:"teal", n:"Deep teal", c:"#0E3B3F"}, {id:"plum", n:"Plum", c:"#2D1B45"},
   {id:"warm", n:"Warm white", c:"#ECE8E2", light:true}, {id:"sky", n:"Sky", c:"#D9E6F5", light:true},
 ];
+const UIS = [{id:"classic", n:"Classic Muru Vision"}, {id:"apple", n:"Apple-Inspired UI"}];
 function applyTheme(){
   const b = BGS.find(x => x.id === S.settings.bg) || BGS[0];
+  const ui = UIS.find(x => x.id === S.settings.ui) || UIS[0];
   const root = document.documentElement;
-  root.style.setProperty("--solid", b.c);
-  root.style.setProperty("--accent-ink", b.light ? "#FFFFFF" : b.c);
-  if (b.light) root.setAttribute("data-tone","light"); else root.removeAttribute("data-tone");
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", b.c);
+  if (ui.id === "apple") {
+    // Apple-inspired UI has its own light/dark palette; the classic background colour is kept for switching back
+    root.setAttribute("data-ui","apple"); root.removeAttribute("data-tone");
+    root.style.removeProperty("--solid"); root.style.removeProperty("--accent-ink");
+  } else {
+    root.removeAttribute("data-ui");
+    root.style.setProperty("--solid", b.c);
+    root.style.setProperty("--accent-ink", b.light ? "#FFFFFF" : b.c);
+    if (b.light) root.setAttribute("data-tone","light"); else root.removeAttribute("data-tone");
+  }
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", ui.id==="apple" ? getComputedStyle(root).getPropertyValue("--solid").trim() : b.c);
+  document.querySelectorAll("#uiPick button").forEach(c => c.setAttribute("aria-pressed", String(c.dataset.ui===ui.id)));
+  if ($("#uiName")) $("#uiName").textContent = "Current: " + ui.n;
   const sw = $("#bgSwatches");
   if (sw && !sw.children.length) sw.innerHTML = BGS.map(x => `<button style="--c:${x.c}" data-bg="${x.id}" aria-label="${x.n}"></button>`).join("");
   document.querySelectorAll("#bgSwatches button").forEach(c => c.setAttribute("aria-pressed", String(c.dataset.bg===b.id)));
@@ -1469,6 +1622,13 @@ $("#setVoice").onchange = e => { S.settings.voice=e.target.value; save(); };
 $("#setRate").oninput = e => { S.settings.rate=+e.target.value; $("#rateV").textContent=(+e.target.value).toFixed(1)+"×"; save(); };
 $("#showKey").onclick = () => { const i=$("#setKey"); i.type = i.type==="password"?"text":"password"; $("#showKey").textContent = i.type==="password"?"Show":"Hide"; };
 $("#bgSwatches").onclick = e => { const b = e.target.closest("button[data-bg]"); if(!b) return; S.settings.bg=b.dataset.bg; save(); applyTheme(); };
+$("#uiPick").onclick = e => {
+  const b = e.target.closest("button[data-ui]"); if(!b || b.dataset.ui===S.settings.ui) return;
+  S.settings.ui=b.dataset.ui; save(); applyTheme(); placeDrop(false);
+  toast("Switched to " + (UIS.find(x => x.id === b.dataset.ui) || UIS[0]).n);
+};
+try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => applyTheme()); } catch(e){}
+document.querySelectorAll(".quick button").forEach(b => b.onclick = () => { go(b.dataset.go); if (b.dataset.mem) memTab(b.dataset.mem); });
 $("#testKey").onclick = async () => {
   const o=$("#testOut");
   if(!S.settings.key){ o.textContent="Paste your key first."; return; }
@@ -1485,7 +1645,7 @@ $("#wipe").onclick = () => $("#wipeConfirm").hidden=false;
 $("#wipeNo").onclick = () => $("#wipeConfirm").hidden=true;
 $("#wipeYes").onclick = async () => {
   for (const p of await photoAll()) await photoDel(p.id);
-  const keep = S.settings.bg; S = structuredClone(DEF); S.settings.bg = keep; save();
+  const keep = S.settings.bg, keepUi = S.settings.ui; S = structuredClone(DEF); S.settings.bg = keep; S.settings.ui = keepUi; save();
   $("#settings").hidden=true; init(); toast("All Muru data deleted from this phone.");
 };
 
